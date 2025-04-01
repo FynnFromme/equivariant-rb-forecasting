@@ -73,6 +73,8 @@ parser.add_argument('-v_kernel_size', type=int, default=3,
                     help='The vertical kernel size. Defaults to `3`.')
 parser.add_argument('-h_kernel_size', type=int, default=3,
                     help='The horizontal kernel size. Defaults to `3`.')
+parser.add_argument('-v_share', type=int, default=1,
+                    help='The number of neighboring output-heights sharing the same kernel. Defaults to `1`.')
 parser.add_argument('-drop_rate', type=float, default=0.2,
                     help='The drop rate applied to the inputs of the LSTM. Defaults to `0.2`.')
 parser.add_argument('-recurrent_drop_rate', type=float, default=0,
@@ -235,6 +237,7 @@ model_hyperparameters = {
     'simulation_name': args.simulation_name,
     'h_kernel_size': args.h_kernel_size,
     'v_kernel_size': args.v_kernel_size,
+    'v_share': args.v_share,
     'drop_rate': args.drop_rate,
     'recurrent_drop_rate': args.recurrent_drop_rate,
     'nonlinearity': args.nonlinearity,

@@ -21,6 +21,7 @@ class RBSteerableConvLSTMCell(enn.EquivariantModule):
         dims: tuple[int],
         v_kernel_size: int,
         h_kernel_size: int,
+        v_share: int = 1,
         v_stride: int = 1,
         h_stride: int = 1,
         h_dilation: int = 1,
@@ -43,6 +44,7 @@ class RBSteerableConvLSTMCell(enn.EquivariantModule):
             dims (tuple[int]): The spatial dimensions of the input data.
             v_kernel_size (int): The vertical kernel size.
             h_kernel_size (int): The horizontal kernel size (in both directions).
+            v_share (int): The number of neighboring output-heights sharing the same kernel. Defaults to 1.
             v_stride (int, optional): The vertical stride. Defaults to 1.
             h_stride (int, optional): The horizontal stride (in both directions). Defaults to 1.
             v_dilation (int, optional): The vertical dilation. Defaults to 1.
@@ -87,6 +89,7 @@ class RBSteerableConvLSTMCell(enn.EquivariantModule):
                                          in_dims=dims,
                                          v_kernel_size=v_kernel_size,
                                          h_kernel_size=h_kernel_size,
+                                         v_share=v_share,
                                          v_stride=v_stride,
                                          h_stride=h_stride,
                                          h_dilation=h_dilation,
@@ -100,6 +103,7 @@ class RBSteerableConvLSTMCell(enn.EquivariantModule):
                                                 in_dims=dims,
                                                 v_kernel_size=v_kernel_size,
                                                 h_kernel_size=h_kernel_size,
+                                                v_share=v_share,
                                                 v_stride=v_stride,
                                                 h_stride=h_stride,
                                                 h_dilation=h_dilation,
@@ -285,6 +289,7 @@ class RBSteerableConvLSTM(enn.EquivariantModule):
         dims: tuple[int],
         v_kernel_size: int,
         h_kernel_size: int,
+        v_share: int = 1,
         v_stride: int = 1,
         h_stride: int = 1,
         h_dilation: int = 1,
@@ -309,6 +314,7 @@ class RBSteerableConvLSTM(enn.EquivariantModule):
             dims (tuple[int]): The spatial dimensions of the input data.
             v_kernel_size (int): The vertical kernel size.
             h_kernel_size (int): The horizontal kernel size (in both directions).
+            v_share (int): The number of neighboring output-heights sharing the same kernel. Defaults to 1.
             v_stride (int, optional): The vertical stride. Defaults to 1.
             h_stride (int, optional): The horizontal stride (in both directions). Defaults to 1.
             v_dilation (int, optional): The vertical dilation. Defaults to 1.
@@ -351,6 +357,7 @@ class RBSteerableConvLSTM(enn.EquivariantModule):
                                                       dims=dims,
                                                       v_kernel_size=v_kernel_size,
                                                       h_kernel_size=h_kernel_size,
+                                                      v_share=v_share,
                                                       v_stride=v_stride,
                                                       h_stride=h_stride,
                                                       h_dilation=h_dilation,
