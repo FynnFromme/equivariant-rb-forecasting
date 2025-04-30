@@ -386,7 +386,7 @@ class RBSteerableForecaster(enn.EquivariantModule):
         return self._parallel_ops
     
     @parallel_ops.setter
-    def set_parallel_ops(self, parallel_ops):
+    def parallel_ops(self, parallel_ops):
         self._parallel_ops = parallel_ops
         self.latent_forecaster.parallel_ops = parallel_ops
         

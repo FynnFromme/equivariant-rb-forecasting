@@ -39,8 +39,13 @@ parser.add_argument('train_name', type=str,
                     help='The name of the trained model to evaluate.')
 
 parser.add_argument('-simulation_name', type=str, default='x48_y48_z32_Ra2500_Pr0.7_t0.01_snap0.125_dur300',
-                    help='The name of the dataset used for evaluation. It must be located in "data/datasets". \
+                    help='The name of the dataset used to train the model. It must be located either in "data/datasets" \
+                        or otherwise in the directory specified by `-dataset_dir`. \
                         Defaults to "x48_y48_z32_Ra2500_Pr0.7_t0.01_snap0.125_dur300".')
+parser.add_argument('-dataset_dir', type=str, default=os.path.join(DATA_DIR, 'datasets'),
+                    help=f'The directory of the dataset. Defaults to "data/datasets".')
+parser.add_argument('-latent_dataset_dir', type=str, default=os.path.join(EXPERIMENT_DIR, 'latent_datasets'),
+                    help=f'The directory of the latent-dataset. Defaults to "experiments/latent_datasets".')
 parser.add_argument('-n_test', type=int, default=-1,
                     help='The number of samples used for evaluating the performance on the test set. Set \
                         to `-1` to use all available samples. Defaults to `-1`.')
@@ -148,8 +153,8 @@ else:
 ########################
 # Data
 ########################
-sim_file = os.path.join(DATA_DIR, 'datasets', f'{args.simulation_name}.h5')
-anim_sim_file = os.path.join(DATA_DIR, 'datasets', f'{args.simulation_name}.h5')
+sim_file = os.path.join(args.dataset_dir, f'{args.simulation_name}.h5')
+anim_sim_file = os.path.join(args.dataset_dir, f'{args.simulation_name}.h5')
 
 if is_autoencoder:
     test_dataset = dataset.RBDataset(sim_file, 'test', device=DEVICE, shuffle=False, samples=args.n_test)
@@ -163,8 +168,7 @@ else:
             ae_model_name = hps['ae_model_name']
             ae_train_name = hps['ae_train_name']
         
-        latent_file = os.path.join(EXPERIMENT_DIR, 'latent_datasets', ae_model_name, 
-                                   ae_train_name, f'{args.simulation_name}.h5')
+        latent_file = os.path.join(args.latent_dataset_dir, ae_model_name, ae_train_name, f'{args.simulation_name}.h5')
         if not os.path.isfile(latent_file):
             print('Loading autoencoder to precompute latent dataset...')
             autoencoder = build_and_load_trained_model(TRAINED_MODELS_DIR, os.path.join('AE', ae_model_name), ae_train_name)
