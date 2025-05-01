@@ -62,7 +62,7 @@ parser.add_argument('-batch_size', type=int, default=64,
                     help='The batch size used during training. Defaults to `64`.')
 
 # model hyperparameters
-parser.add_argument('-flips', type=bool, default=True,
+parser.add_argument('-flips', type=str2bool, default=True,
                     help='Whether to be equivariant to flips (only relevant for SteerableConv). Defaults to `True`.')
 parser.add_argument('-rots', type=int, default=4,
                     help='The number of rotations to be equivariant to (only relevant for SteerableConv). \

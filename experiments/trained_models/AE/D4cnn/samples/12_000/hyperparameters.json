@@ -10,11 +10,11 @@
     "flips": true,
     "rots": 4,
     "encoder_channels": [
-        2,
         4,
-        4,
-        6,
-        7
+        8,
+        8,
+        13,
+        14
     ],
     "latent_channels": 32,
     "pool_layers": [
@@ -26,7 +26,7 @@
     ],
     "v_shares": null,
     "batch_size": 64,
-    "n_train": 24060,
+    "n_train": 12000,
     "n_valid": 8020,
     "learning_rate": 0.001,
     "optimizer": "<class 'torch.optim.adam.Adam'>",
@@ -36,8 +36,8 @@
     "weight_decay": 0,
     "early_stopping": 20,
     "early_stopping_threshold": 1e-05,
-    "epochs": 500,
+    "epochs": 1000,
     "train_loss_in_eval": false,
     "latent_size": 1.5625,
-    "parameters": 897224
+    "parameters": 3554384
 }

@@ -7,14 +7,14 @@
     "latent_v_kernel_size": 3,
     "drop_rate": 0.2,
     "nonlinearity": "ELU",
-    "flips": true,
+    "flips": false,
     "rots": 4,
     "encoder_channels": [
-        2,
-        4,
-        4,
-        6,
-        7
+        5,
+        10,
+        11,
+        20,
+        20
     ],
     "latent_channels": 32,
     "pool_layers": [
@@ -39,5 +39,5 @@
     "epochs": 500,
     "train_loss_in_eval": false,
     "latent_size": 1.5625,
-    "parameters": 897224
+    "parameters": 3568976
 }

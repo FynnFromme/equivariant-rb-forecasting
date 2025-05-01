@@ -1,5 +1,5 @@
 {
-    "conv_type": "SteerableConv",
+    "conv_type": "Conv3D",
     "simulation_name": "x48_y48_z32_Ra2500_Pr0.7_t0.01_snap0.125_dur300",
     "h_kernel_size": 5,
     "v_kernel_size": 5,
@@ -10,13 +10,13 @@
     "flips": true,
     "rots": 4,
     "encoder_channels": [
-        2,
-        4,
-        4,
-        6,
-        7
+        20,
+        39,
+        39,
+        77,
+        78
     ],
-    "latent_channels": 32,
+    "latent_channels": 64,
     "pool_layers": [
         true,
         false,
@@ -38,6 +38,6 @@
     "early_stopping_threshold": 1e-05,
     "epochs": 500,
     "train_loss_in_eval": false,
-    "latent_size": 1.5625,
-    "parameters": 897224
+    "latent_size": 3.125,
+    "parameters": 3607428
 }

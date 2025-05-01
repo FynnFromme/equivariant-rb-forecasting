@@ -10,11 +10,11 @@
     "flips": true,
     "rots": 4,
     "encoder_channels": [
-        2,
-        4,
-        4,
-        6,
-        7
+        3,
+        5,
+        5,
+        10,
+        10
     ],
     "latent_channels": 32,
     "pool_layers": [
@@ -39,5 +39,5 @@
     "epochs": 500,
     "train_loss_in_eval": false,
     "latent_size": 1.5625,
-    "parameters": 897224
+    "parameters": 1756384
 }

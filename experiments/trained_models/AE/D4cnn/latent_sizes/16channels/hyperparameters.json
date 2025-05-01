@@ -10,13 +10,13 @@
     "flips": true,
     "rots": 4,
     "encoder_channels": [
-        2,
         4,
-        4,
-        6,
-        7
+        8,
+        8,
+        14,
+        14
     ],
-    "latent_channels": 32,
+    "latent_channels": 16,
     "pool_layers": [
         true,
         false,
@@ -38,6 +38,6 @@
     "early_stopping_threshold": 1e-05,
     "epochs": 500,
     "train_loss_in_eval": false,
-    "latent_size": 1.5625,
-    "parameters": 897224
+    "latent_size": 0.78125,
+    "parameters": 3643872
 }
