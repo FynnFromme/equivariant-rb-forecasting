@@ -113,9 +113,9 @@ parser.add_argument('-use_force_decoding', type=str2bool, default=True,
                     help='If set to `True`, a certain percentage of predictions during training \
                         are made based on the ground truth. The percentage linearly decreases over \
                         the epochs. Defaults to `True`.')
-parser.add_argument('-init_forced_decoding_prob', type=float, default=1,
+parser.add_argument('-init_forced_decoding_prob', type=float, default=0.25,
                     help='The initial probability for forced decoding at the start of the training. \
-                        Defaults to `1.0`.')
+                        Defaults to `0.25`.')
 parser.add_argument('-min_forced_decoding_prob', type=float, default=0,
                     help='The minimum probability for forced decoding during training. Defaults to `0.0`.')
 parser.add_argument('-forced_decoding_epochs', type=int, default=100,
