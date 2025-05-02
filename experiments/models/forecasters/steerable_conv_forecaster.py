@@ -255,12 +255,12 @@ class RBSteerableLatentForecaster(enn.EquivariantModule):
         
         if self.use_lstm_encoder:
             for i, cell in enumerate(self.lstm_encoder.cells, 1):
-                out_shapes[f'EncoderLSTM{i}'] = [len(cell.hidden_fields), sum(f.size for f in self.field_type), *cell.out_dims]
+                out_shapes[f'EncoderLSTM{i}'] = [*cell.out_dims, len(cell.hidden_fields), sum(f.size for f in self.field_type)]
             
         for i, cell in enumerate(self.lstm_decoder.cells, 1):
-            out_shapes[f'DecoderLSTM{i}'] = [len(cell.hidden_fields), sum(f.size for f in self.field_type), *cell.out_dims]
+            out_shapes[f'DecoderLSTM{i}'] = [*cell.out_dims, len(cell.hidden_fields), sum(f.size for f in self.field_type)]
             
-        out_shapes['LSTM-Head'] = [self.latent_channels, sum(f.size for f in self.field_type), *self.latent_dims]
+        out_shapes['LSTM-Head'] = [*self.latent_dims, self.latent_channels, sum(f.size for f in self.field_type)]
         
         return out_shapes
         

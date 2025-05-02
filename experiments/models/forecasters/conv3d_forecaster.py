@@ -209,12 +209,12 @@ class RB3DLatentForecaster(Module):
         
         if self.use_lstm_encoder:
             for i, cell in enumerate(self.lstm_encoder.cells, 1):
-                out_shapes[f'EncoderLSTM{i}'] = [cell.hidden_channels, *cell.out_dims]
+                out_shapes[f'EncoderLSTM{i}'] = [*cell.out_dims, cell.hidden_channels]
             
         for i, cell in enumerate(self.lstm_decoder.cells, 1):
-            out_shapes[f'DecoderLSTM{i}'] = [cell.hidden_channels, *cell.out_dims]
+            out_shapes[f'DecoderLSTM{i}'] = [*cell.out_dims, cell.hidden_channels]
             
-        out_shapes['LSTM-Head'] = [self.latent_channels, *self.latent_dims]
+        out_shapes['LSTM-Head'] = [*self.latent_dims, self.latent_channels]
         
         return out_shapes
         

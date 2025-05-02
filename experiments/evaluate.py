@@ -419,7 +419,7 @@ if args.animate2d:
     horizontal_size = int(args.simulation_name.split('_')[0][1:])
     height = int(args.simulation_name.split('_')[2][1:])
     
-    print('Animating...')
+    print('Animating 2D...')
     with tqdm(total=12, desc='animating', unit='animation') as pbar:
         for feature in ['t', 'u', 'v', 'w']:
             for axis, dim in enumerate(['width', 'depth', 'height']):
@@ -442,7 +442,7 @@ if args.animate2d:
 if args.animate3d:
     anim_dir = os.path.join(results_dir, 'animations')
     
-    print('Animating...')
+    print('Animating 3D...')
     with tqdm(total=4, desc='animating', unit='animation') as pbar:
         for feature in ['t', 'u', 'v', 'w']:
             if is_forecast_model:
@@ -468,7 +468,7 @@ if args.compute_latent_sensitivity:
         if (args.latent_sensitivity_samples > 0):
             samples = min(sensitivity_dataset.num_samples, args.latent_sensitivity_samples) 
         else:
-            samles = sensitivity_dataset.num_samples
+            samples = sensitivity_dataset.num_samples
         
         avg_sensitivity, avg_abs_sensitivity = compute_latent_sensitivity(
             model, sensitivity_dataset, samples=samples, save_dir=results_dir,

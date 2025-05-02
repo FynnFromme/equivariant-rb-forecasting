@@ -13,11 +13,13 @@ from datetime import timedelta
 
 from collections import defaultdict
 
-from typing import Literal
+from typing import Literal, Callable
 from torch.utils.data import DataLoader
 
 import os
 import json
+
+from tqdm.auto import tqdm
 
 
 
@@ -98,7 +100,7 @@ def rb_autoencoder_animation(model: torch.nn.Module,
     fig.colorbar(diff_im, cax=cax, orientation='vertical')
 
     last_frame = 0
-    def frame_updater(frame):
+    def frame_updater(frame, pbar):
         """Computes the next frame of the animation."""
         nonlocal batch_y, batch_pred, batch_y_stand, batch_pred_stand, in_batch_frame, last_frame
         if frame <= last_frame:
@@ -129,13 +131,16 @@ def rb_autoencoder_animation(model: torch.nn.Module,
         orig_im.set_clim(vmin=vmin, vmax=vmax)
         pred_im.set_clim(vmin=vmin, vmax=vmax)
         
+        pbar.update(1)
+        
         return orig_im, pred_im
     
     frames = min(num_samples(sim_file, dataset_name), frames)
-    anim = animation.FuncAnimation(fig, frame_updater, frames=frames, interval=1000/fps, blit=True)
-    
-    os.makedirs(anim_dir, exist_ok=True)
-    anim.save(os.path.join(anim_dir, anim_name), dpi=500)
+    with tqdm(total=frames, desc=f'animating {feature} (axis {axis})', unit='frames') as pbar:
+        anim = animation.FuncAnimation(fig, frame_updater, frames=frames, interval=1000/fps, blit=True, fargs=(pbar,))
+        
+        os.makedirs(anim_dir, exist_ok=True)
+        anim.save(os.path.join(anim_dir, anim_name), dpi=500)
     plt.close()
     
     
@@ -198,7 +203,7 @@ def rb_autoencoder_animation_3d(model: torch.nn.Module,
     # cbar = fig.colorbar(diff_faces[1], cax=cax, ticks=[0, 0.5, 1], extend="both", orientation='vertical')
 
     last_frame = 0
-    def frame_updater(frame):
+    def frame_updater(frame, pbar):
         """Computes the next frame of the animation."""
         nonlocal batch_y, batch_pred, batch_diff, batch_y_stand, batch_pred_stand, in_batch_frame, last_frame
         nonlocal orig_faces, pred_faces, diff_faces
@@ -242,13 +247,16 @@ def rb_autoencoder_animation_3d(model: torch.nn.Module,
             ax2.view_init(elev=elev, azim=azim)
             ax3.view_init(elev=elev, azim=azim)
         
+        pbar.update(1)
+        
         return orig_faces + pred_faces + diff_faces
     
     frames = min(num_samples(sim_file, dataset_name), frames)
-    anim = animation.FuncAnimation(fig, frame_updater, frames=frames, interval=1000/fps, blit=True)
-    
-    os.makedirs(anim_dir, exist_ok=True)
-    anim.save(os.path.join(anim_dir, anim_name), dpi=500)
+    with tqdm(total=frames, desc=f'animating {feature}', unit='frames') as pbar:
+        anim = animation.FuncAnimation(fig, frame_updater, frames=frames, interval=1000/fps, blit=True, fargs=(pbar,))
+        
+        os.makedirs(anim_dir, exist_ok=True)
+        anim.save(os.path.join(anim_dir, anim_name), dpi=500)
     plt.close()
     
     
@@ -385,7 +393,7 @@ def rb_forecaster_animation(model: torch.nn.Module,
 
     last_frame = 0
     sim = 1
-    def frame_updater(frame):
+    def frame_updater(frame, pbar):
         """Computes the next frame of the animation."""
         nonlocal y, forecast, y_stand, forecast_stand, forecast_frame, last_frame, sim
         if frame <= last_frame:
@@ -418,13 +426,16 @@ def rb_forecaster_animation(model: torch.nn.Module,
         
         plt.suptitle(f'Simulation {sim} - {forecast_frame+1} autoregressive steps')
         
+        pbar.update(1)
+        
         return orig_im, pred_im
     
     frames = min(dataset.num_samples, num_forecasts) * dataset.forecast_seq_length
-    anim = animation.FuncAnimation(fig, frame_updater, frames=frames, interval=1000/fps, blit=True)
+    with tqdm(total=frames, desc=f'animating {feature} (axis {axis})', unit='frames') as pbar:
+        anim = animation.FuncAnimation(fig, frame_updater, frames=frames, interval=1000/fps, blit=True, fargs=(pbar,))
     
-    os.makedirs(anim_dir, exist_ok=True)
-    anim.save(os.path.join(anim_dir, anim_name), dpi=500)
+        os.makedirs(anim_dir, exist_ok=True)
+        anim.save(os.path.join(anim_dir, anim_name), dpi=500)
     plt.close()
     
 
@@ -493,7 +504,7 @@ def rb_forecaster_animation_3d(model: torch.nn.Module,
 
     last_frame = 0
     sim=1
-    def frame_updater(frame):
+    def frame_updater(frame, pbar):
         """Computes the next frame of the animation."""
         nonlocal y, forecast, y_stand, forecast_stand, forecast_frame, last_frame, sim
         nonlocal orig_faces, pred_faces, diff_faces
@@ -540,14 +551,17 @@ def rb_forecaster_animation_3d(model: torch.nn.Module,
             ax1.view_init(elev=elev, azim=azim)
             ax2.view_init(elev=elev, azim=azim)
             ax3.view_init(elev=elev, azim=azim)
+            
+        pbar.update(1)
         
         return orig_faces + pred_faces + diff_faces
     
     frames = min(dataset.num_samples, num_forecasts) * dataset.forecast_seq_length
-    anim = animation.FuncAnimation(fig, frame_updater, frames=frames, interval=1000/fps, blit=True)
-    
-    os.makedirs(anim_dir, exist_ok=True)
-    anim.save(os.path.join(anim_dir, anim_name), dpi=500)
+    with tqdm(total=frames, desc=f'animating {feature}', unit='frames') as pbar:
+        anim = animation.FuncAnimation(fig, frame_updater, frames=frames, interval=1000/fps, blit=True, fargs=(pbar,))
+        
+        os.makedirs(anim_dir, exist_ok=True)
+        anim.save(os.path.join(anim_dir, anim_name), dpi=500)
     plt.close()    
 
     
@@ -863,7 +877,7 @@ def plot_performance_per_height(results_dir: str, model_names: str | list, train
     
 def plot_performance_per_hp(trains_dir: str, results_dir: str, model_names: str | list, train_names: str | list, 
                             metric: str, hp: str, x_label: str = None, rounding: int = None, show_train: bool = False,
-                            fill_error: bool = True):
+                            fill_error: bool = True, hp_value_map: Callable = lambda x: x):
     if type(model_names) == str: model_names = [model_names]
     if type(train_names) == str: train_names = [train_names]
     
@@ -897,8 +911,9 @@ def plot_performance_per_hp(trains_dir: str, results_dir: str, model_names: str 
         # sort by hp value and compute statistics
         hp_values, mean, std, mean_train, std_train = [], [], [], [], []
         error_bar = False
-        for hp_value in sorted(performance_per_hp.keys()):
-            hp_values.append(hp_value)
+        
+        for hp_value in sorted(performance_per_hp.keys(), key=hp_value_map):
+            hp_values.append(hp_value_map(hp_value))
             
             performances, performances_train = performance_per_hp[hp_value]
             if len(performances) > 1:

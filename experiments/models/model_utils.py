@@ -14,7 +14,7 @@ def summary(model: Module, out_shapes: OrderedDict, layer_params: OrderedDict, s
     """Print summary of the model."""
     shape = '[w, d, h, c]'
     if steerable: 
-        shape += ", |G|"
+        shape = f'{shape[:-1]}, |G|]'
     
     table = PrettyTable()
     table.field_names = ['Layer', f'Output shape {shape}', 'Parameters']
