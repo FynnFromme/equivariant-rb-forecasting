@@ -23,6 +23,8 @@ To install the requirements, run:
 
 ```setup
 conda env create -f environment.yml
+conda activate rbforecasting
+pip install -r requirements.txt
 ```
 
 
