@@ -237,6 +237,7 @@ if args.eval_performance:
     # read current performances
     performance_file = os.path.join(results_dir, 'performance.json')
     performance = load_json(performance_file)
+    performance['simulation_name'] = args.simulation_name
     
     # update new performance metrics but keep other contents
     mse, mae = compute_loss(model, test_loader, [torch.nn.MSELoss(), torch.nn.L1Loss()], 
@@ -269,6 +270,7 @@ if args.eval_autoregressive_performance:
         # read current performances
         performance_file = os.path.join(results_dir, 'autoregressive_performance.json')
         performance = load_json(performance_file)
+        performance['simulation_name'] = args.simulation_name
 
         # update new performance metrics but keep other contents
         avgs, medians, lower_bounds, upper_bounds = compute_autoregressive_loss(
@@ -311,6 +313,8 @@ if args.eval_performance_per_sim:
     # read current simulation performances
     performances_file = os.path.join(results_dir, 'performance_per_sim.json')
     performances = load_json(performances_file)
+    performances['simulation_name'] = args.simulation_name
+    
     performances = performances | {'mse': [], 'rmse': [], 'mae': []}
     
     # update new performance metrics but keep other contents
@@ -346,6 +350,7 @@ if args.eval_performance_per_channel:
         # read current performances
         performance_file = os.path.join(results_dir, 'performance_per_channel.json')
         performance = load_json(performance_file)
+        performance['simulation_name'] = args.simulation_name
         
         # update new performance metrics but keep other contents
         mse, mae = compute_loss_per_channel(model, test_loader, [torch.nn.MSELoss(), torch.nn.L1Loss()],  
@@ -371,6 +376,7 @@ if args.eval_performance_per_height:
         # read current performances
         performance_file = os.path.join(results_dir, 'performance_per_height.json')
         performance = load_json(performance_file)
+        performance['simulation_name'] = args.simulation_name
         
         # update new performance metrics but keep other contents
         # over all channels:
