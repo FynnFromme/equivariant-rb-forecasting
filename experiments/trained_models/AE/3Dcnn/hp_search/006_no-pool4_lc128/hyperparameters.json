@@ -23,6 +23,7 @@
         false
     ],
     "batch_size": 64,
+    "accumulated_batches": 1,
     "n_train": 24060,
     "n_valid": 8020,
     "learning_rate": 0.001,

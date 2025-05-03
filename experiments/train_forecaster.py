@@ -67,6 +67,9 @@ parser.add_argument('-n_valid', type=int, default=-1,
                         Defaults to `-1`.')
 parser.add_argument('-batch_size', type=int, default=64,
                     help='The batch size used during training. Defaults to `64`.')
+parser.add_argument('-accumulated_batches', type=int, default=1,
+                    help='The number of batches the loss is accumulated before performing a gradient descent step. \
+                          Defaults to `1`.')
 
 # model hyperparameters
 parser.add_argument('-flips', type=str2bool, default=True,
@@ -109,7 +112,7 @@ parser.add_argument('-parallel_ops', type=str2bool, default=False,
 parser.add_argument('-loss_on_decoded', type=str2bool, default=False,
                     help='When set to `True`, the loss is computed based on the decoded data rather than \
                         on the latent representation directly. Defaults to `False`.')
-parser.add_argument('-use_force_decoding', type=str2bool, default=True,
+parser.add_argument('-use_forced_decoding', type=str2bool, default=True,
                     help='If set to `True`, a certain percentage of predictions during training \
                         are made based on the ground truth. The percentage linearly decreases over \
                         the epochs. Defaults to `True`.')
@@ -150,11 +153,11 @@ args = parser.parse_args()
 if args.train_autoencoder and not args.loss_on_decoded:
     raise Exception('When training the autoencoder, the loss must be computed on the decoded output. \
         Please add `-loss_on_decoded true`.')
-if args.loss_on_decoded and args.use_force_decoding:
+if args.loss_on_decoded and args.use_forced_decoding:
     raise Exception('When training on decoded data, force decoding is currently not supported. \
-        Please add `-use_force_decoding false`.')
+        Please add `-use_forced_decoding false`.')
 
-if not args.use_force_decoding:
+if not args.use_forced_decoding:
     args.init_forced_decoding_prob = 0
     args.min_forced_decoding_prob = 0
     
@@ -257,7 +260,7 @@ model_hyperparameters = {
     'init_forced_decoding_prob': args.init_forced_decoding_prob,
     'min_forced_decoding_prob': args.min_forced_decoding_prob,
     'forced_decoding_epochs': args.forced_decoding_epochs,
-    'use_force_decoding': args.use_force_decoding,
+    'use_forced_decoding': args.use_forced_decoding,
     'backprop_through_autoregression': args.backprop_through_autoregression
 }
 
@@ -309,6 +312,7 @@ remaining_epochs = args.epochs - loaded_epoch
 ########################
 train_hyperparameters = {
     'batch_size': args.batch_size,
+    'accumulated_batches': args.accumulated_batches,
     'n_train': train_dataset.num_samples,
     'n_valid': valid_dataset.num_samples,
     'learning_rate': args.lr,
@@ -359,7 +363,8 @@ model_forward_kwargs = {'steps': args.forecast_seq_length, 'epoch': None, 'groun
 training.train(model=model, models_dir=TRAINED_MODELS_DIR, model_name=model_name, train_name=args.train_name, 
                start_epoch=loaded_epoch, epochs=remaining_epochs, train_loader=train_loader, valid_loader=valid_loader, 
                loss_fn=loss_fn, optimizer=optimizer, lr_scheduler=lr_scheduler, use_lr_scheduler=args.use_lr_scheduler, 
-               early_stopping=args.early_stopping, only_save_best=args.only_save_best, train_samples=train_dataset.num_samples, 
-               model_forward_kwargs=model_forward_kwargs, initial_early_stop_count=initial_early_stop_count,
-               train_loss_in_eval=args.train_loss_in_eval, early_stopping_threshold=args.early_stopping_threshold, 
-               batch_size=args.batch_size, data_augmentation=data_augmentation, plot=False)
+               early_stopping=args.early_stopping, only_save_best=args.only_save_best, 
+               train_samples=train_dataset.num_samples, model_forward_kwargs=model_forward_kwargs, 
+               initial_early_stop_count=initial_early_stop_count, train_loss_in_eval=args.train_loss_in_eval, 
+               early_stopping_threshold=args.early_stopping_threshold, batch_size=args.batch_size, 
+               accumulated_batches=args.accumulated_batches, data_augmentation=data_augmentation, plot=False)

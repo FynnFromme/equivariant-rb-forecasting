@@ -20,6 +20,7 @@
     "include_autoencoder": false,
     "use_lstm_encoder": true,
     "batch_size": 64,
+    "accumulated_batches": 1,
     "n_train": 23220,
     "n_valid": 7740,
     "learning_rate": 0.001,

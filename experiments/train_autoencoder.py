@@ -60,6 +60,9 @@ parser.add_argument('-n_valid', type=int, default=-1,
                         Defaults to `-1`.')
 parser.add_argument('-batch_size', type=int, default=64,
                     help='The batch size used during training. Defaults to `64`.')
+parser.add_argument('-accumulated_batches', type=int, default=1,
+                    help='The number of batches the loss is accumulated before performing a gradient descent step. \
+                          Defaults to `1`.')
 
 # model hyperparameters
 parser.add_argument('-flips', type=str2bool, default=True,
@@ -227,6 +230,7 @@ remaining_epochs = args.epochs - loaded_epoch
 ########################
 train_hyperparameters = {
     'batch_size': args.batch_size,
+    'accumulated_batches': args.accumulated_batches
     'n_train': train_dataset.num_samples,
     'n_valid': valid_dataset.num_samples,
     'learning_rate': args.lr,
@@ -265,6 +269,6 @@ training.train(model=model, models_dir=TRAINED_MODELS_DIR, model_name=model_name
                start_epoch=loaded_epoch, epochs=remaining_epochs, train_loader=train_loader, valid_loader=valid_loader, 
                loss_fn=loss_fn, optimizer=optimizer, lr_scheduler=lr_scheduler, use_lr_scheduler=args.use_lr_scheduler, 
                early_stopping=args.early_stopping, only_save_best=args.only_save_best, batch_size=args.batch_size,
-               train_samples=train_dataset.num_samples, data_augmentation=data_augmentation, plot=False, 
-               initial_early_stop_count=initial_early_stop_count, train_loss_in_eval=args.train_loss_in_eval,
-               early_stopping_threshold=args.early_stopping_threshold)
+               accumulated_batches=args.accumulated_batches, train_samples=train_dataset.num_samples, 
+               data_augmentation=data_augmentation, plot=False, initial_early_stop_count=initial_early_stop_count, 
+               train_loss_in_eval=args.train_loss_in_eval, early_stopping_threshold=args.early_stopping_threshold)

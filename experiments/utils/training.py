@@ -39,6 +39,7 @@ def train(model: torch.nn.Module,
           batch_size: int,
           data_augmentation: DataAugmentation, 
           plot: bool,
+          accumulated_batches: int = 1,
           early_stopping_threshold: float = 1e-5,
           initial_early_stop_count: int = 0,
           train_loss_in_eval: bool = False,
@@ -74,8 +75,8 @@ def train(model: torch.nn.Module,
         for epoch in range(1+start_epoch, 1+start_epoch+epochs):
             epoch_start = time.time()
             train_loss, valid_loss = train_loop(train_loader, valid_loader, model, loss_fn, optimizer, 
-                                                epoch, batch_size, train_samples, data_augmentation, 
-                                                train_loss_in_eval, model_forward_kwargs)
+                                                epoch, batch_size, train_samples, accumulated_batches,
+                                                data_augmentation, train_loss_in_eval, model_forward_kwargs)
             epoch_duration = time.time() - epoch_start
             pbar.update(1)
             
@@ -140,8 +141,9 @@ def train_loop(train_loader: DataLoader,
                loss_fn, 
                optimizer, 
                epochnum: int, 
-               batch_size: int, 
+               batch_size: int,
                samples: int,
+               accumulated_batches: int = 1,
                data_augmentation: DataAugmentation = None, 
                train_loss_in_eval: bool = False,
                model_forward_kwargs: dict = {}):
@@ -150,9 +152,8 @@ def train_loop(train_loader: DataLoader,
     
     n = 0
     with tqdm(total=math.ceil(samples/batch_size), desc=f'epoch {epochnum}', unit='batch', dynamic_ncols=True) as pbar:
-        for i, (x, y) in enumerate(train_loader, 1):
-            optimizer.zero_grad() # Resets gradient
-            
+        optimizer.zero_grad() # Resets gradient
+        for i, (x, y) in enumerate(train_loader, 1):           
             if data_augmentation:
                 x, y = data_augmentation(x, y)
                 
@@ -169,13 +170,22 @@ def train_loop(train_loader: DataLoader,
             cur_batch_size = x.size(0)
             running_loss += loss.item()*cur_batch_size
         
-            # Backpropagation
-            loss.backward() # Backpropagates the prediction loss
-            optimizer.step() # Adjusts the parameters by the gradients collected in the backward pass
+            # accumulate gradient updates over multiple batches
+            (loss/accumulated_batches).backward()
+            
+            if i % accumulated_batches == 0:
+                 # Adjusts the parameters by the gradients accumulated in the backward passes
+                optimizer.step()
+                optimizer.zero_grad() # Resets gradient
             
             n += cur_batch_size
             pbar.set_postfix_str(f'train_loss={running_loss/n:.5f}')
             pbar.update(1)
+        
+        # check whether batches remain without weight update    
+        if i % accumulated_batches > 0:
+            # Adjusts the parameters by the gradients accumulated in the backward passes
+            optimizer.step()
             
         if train_loss_in_eval:
             train_loss = compute_loss(train_loader, model, loss_fn, model_forward_kwargs)

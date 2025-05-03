@@ -642,7 +642,7 @@ def plot_loss_history(model_dir: str, model_names: str | list, train_names: str 
         with open(hyperparameters_file, 'r') as f:
             hyperparameters = json.load(f)
         train_loss_incl_dropout = hyperparameters['drop_rate'] > 0 and not hyperparameters['train_loss_in_eval']
-        train_loss_w_forced_decoding = hyperparameters.get('use_force_decoding', False) and not hyperparameters['train_loss_in_eval']
+        train_loss_w_forced_decoding = hyperparameters.get('use_forced_decoding', False) and not hyperparameters['train_loss_in_eval']
 
         x = range(1, len(log['train_loss'])+1)
         if time_x:
