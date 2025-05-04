@@ -190,7 +190,7 @@ initial_early_stop_count, loaded_epoch = training.load_trained_model(model=model
                                                                      epoch=args.start_epoch)
 
 if loaded_epoch == 0:
-    # load non pre-trained forecaster (autoencoder part already loaded)
+    # load non fine-tuned forecaster (autoencoder part already loaded)
     training.load_trained_model(model=model,
                                 models_dir=TRAINED_MODELS_DIR,
                                 model_name=args.model_name,

@@ -230,7 +230,7 @@ remaining_epochs = args.epochs - loaded_epoch
 ########################
 train_hyperparameters = {
     'batch_size': args.batch_size,
-    'accumulated_batches': args.accumulated_batches
+    'accumulated_batches': args.accumulated_batches,
     'n_train': train_dataset.num_samples,
     'n_valid': valid_dataset.num_samples,
     'learning_rate': args.lr,
