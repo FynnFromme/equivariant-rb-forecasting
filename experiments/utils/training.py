@@ -255,7 +255,7 @@ def load_trained_model(model, models_dir, model_name, train_name, optimizer=None
             raise Exception('model not saved for that epoch')
     
     checkpoint = torch.load(file_path)
-    model.load_state_dict(checkpoint['model_state_dict'], strict=False)
+    model.load_state_dict(checkpoint['model_state_dict'], strict=True)
     if optimizer: optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     early_stop_count = checkpoint['early_stop_count']
     model.eval()

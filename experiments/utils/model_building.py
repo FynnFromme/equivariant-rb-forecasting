@@ -43,13 +43,38 @@ steerable_nonlinearity_mapping_fc = {
 }
 
 
-def build_and_load_trained_model(models_dir: str, model_name: str, train_name: str, epoch: int = -1,
-                                 override_hps: dict = {}):
+def get_hyperparameters(models_dir, model_name, train_name):
     train_dir = os.path.join(models_dir, model_name, train_name)
     
     with open(os.path.join(train_dir, 'hyperparameters.json'), 'r') as f:
         hyperparameters = json.load(f)
         
+    return hyperparameters
+
+
+def build_and_load_trained_model(models_dir: str, model_name: str, train_name: str, epoch: int = -1,
+                                 override_hps: dict = {}):
+    model = build_trained_model(models_dir, model_name, train_name, override_hps)
+        
+    if model_name.startswith('AE') or models_dir.endswith('AE'):
+        load_trained_model(model, models_dir, model_name, train_name, epoch=epoch)
+    elif model_name.startswith('FC') or models_dir.endswith('FC'):
+        load_trained_model(model.latent_forecaster, models_dir, model_name, train_name, epoch=epoch)
+        
+        # load autoencoder if included
+        if type(model) in (RBSteerableForecaster, RB3DForecaster):
+            hyperparameters = get_hyperparameters(models_dir, model_name, train_name)
+            ae_model_name = os.path.join('AE', hyperparameters['ae_model_name'])
+            ae_train_name = hyperparameters['ae_train_name']
+            load_trained_model(model.autoencoder, models_dir, ae_model_name, ae_train_name)
+    else:
+        raise Exception('The model type (autoencoder or forecaster) must be specified in either the models_dir or model_name')
+        
+    return model
+
+
+def build_trained_model(models_dir: str, model_name: str, train_name: str, override_hps: dict = {}):
+    hyperparameters = get_hyperparameters(models_dir, model_name, train_name)
     hyperparameters.update(override_hps)
         
     if model_name.startswith('AE') or models_dir.endswith('AE'):
@@ -59,8 +84,6 @@ def build_and_load_trained_model(models_dir: str, model_name: str, train_name: s
     else:
         raise Exception('The model type (autoencoder or forecaster) must be specified in either the models_dir or model_name')
         
-    # load weights into the model (changes the model itself)
-    load_trained_model(model, models_dir, model_name, train_name, epoch=epoch, optimizer=None)
     return model
 
 
@@ -155,7 +178,7 @@ def build_RB3DAutoencoder(simulation_name: str, encoder_channels: tuple, latent_
 def build_RB3DForecaster(models_dir: str, ae_model_name: str, ae_train_name: str, lstm_channels: int, v_kernel_size: int, 
                          h_kernel_size: int, drop_rate: float, recurrent_drop_rate: float, nonlinearity, 
                          include_autoencoder: bool, **kwargs):
-    autoencoder = build_and_load_trained_model(models_dir, os.path.join('AE', ae_model_name), ae_train_name)
+    autoencoder = build_trained_model(models_dir, os.path.join('AE', ae_model_name), ae_train_name)
     *latent_dims, latent_channels = autoencoder.latent_shape      
     
     nonlinearity = nonlinearity_mapping_fc[nonlinearity]
@@ -182,7 +205,7 @@ def build_RB3DForecaster(models_dir: str, ae_model_name: str, ae_train_name: str
 def build_RBSteerableForecaster(models_dir: str, ae_model_name: str, ae_train_name: str, rots: int, flips: int, 
                                 lstm_channels: int, v_kernel_size: int, h_kernel_size: int, drop_rate: float, 
                                 recurrent_drop_rate: float, nonlinearity, include_autoencoder: bool, **kwargs):
-    autoencoder = build_and_load_trained_model(models_dir, os.path.join('AE', ae_model_name), ae_train_name)
+    autoencoder = build_trained_model(models_dir, os.path.join('AE', ae_model_name), ae_train_name)
     G_size = 2*rots if flips else rots
     *latent_dims, latent_fieldsizes = autoencoder.latent_shape
     latent_channels = latent_fieldsizes//G_size
@@ -203,8 +226,8 @@ def build_RBSteerableForecaster(models_dir: str, ae_model_name: str, ae_train_na
                                                     **kwargs)
     if include_autoencoder:
         return RBSteerableForecaster(latent_forecaster=latent_forecaster,
-                                           autoencoder=autoencoder,
-                                           **kwargs)
+                                     autoencoder=autoencoder,
+                                     **kwargs)
     else:
         del autoencoder
         return latent_forecaster
