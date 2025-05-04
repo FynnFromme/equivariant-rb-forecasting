@@ -59,14 +59,19 @@ def build_and_load_trained_model(models_dir: str, model_name: str, train_name: s
     if model_name.startswith('AE') or models_dir.endswith('AE'):
         load_trained_model(model, models_dir, model_name, train_name, epoch=epoch)
     elif model_name.startswith('FC') or models_dir.endswith('FC'):
-        load_trained_model(model.latent_forecaster, models_dir, model_name, train_name, epoch=epoch)
-        
-        # load autoencoder if included
-        if type(model) in (RBSteerableForecaster, RB3DForecaster):
-            hyperparameters = get_hyperparameters(models_dir, model_name, train_name)
-            ae_model_name = os.path.join('AE', hyperparameters['ae_model_name'])
-            ae_train_name = hyperparameters['ae_train_name']
-            load_trained_model(model.autoencoder, models_dir, ae_model_name, ae_train_name)
+        hps = get_hyperparameters(models_dir, model_name, train_name)
+        if hps['include_autoencoder']:
+            # forecaster model is saved as a whole
+            load_trained_model(model, models_dir, model_name, train_name, epoch=epoch)
+        else:
+            # forecaster model is only saved as a latent forecaster
+            load_trained_model(model.latent_forecaster, models_dir, model_name, train_name, epoch=epoch)
+            
+            # load autoencoder separately if included
+            if type(model) in (RBSteerableForecaster, RB3DForecaster):
+                ae_model_name = os.path.join('AE', hps['ae_model_name'])
+                ae_train_name = hps['ae_train_name']
+                load_trained_model(model.autoencoder, models_dir, ae_model_name, ae_train_name)
     else:
         raise Exception('The model type (autoencoder or forecaster) must be specified in either the models_dir or model_name')
         
