@@ -190,12 +190,21 @@ initial_early_stop_count, loaded_epoch = training.load_trained_model(model=model
                                                                      epoch=args.start_epoch)
 
 if loaded_epoch == 0:
-    # load non fine-tuned forecaster (autoencoder part already loaded)
-    training.load_trained_model(model=model,
-                                models_dir=TRAINED_MODELS_DIR,
-                                model_name=args.model_name,
-                                train_name=args.fc_train_name,
-                                epoch=-1)
+    # load non fine-tuned forecaster and autoencoder
+    _, fc_loaded_epoch = training.load_trained_model(model=model.latent_forecaster, 
+                                                     models_dir=TRAINED_MODELS_DIR, 
+                                                     model_name=args.model_name, 
+                                                     train_name=args.fc_train_name, 
+                                                     epoch=-1)
+    
+    _, ae_loaded_epoch = training.load_trained_model(model=model.autoencoder, 
+                                                     models_dir=TRAINED_MODELS_DIR, 
+                                                     model_name='AE/'+args.ae_model_name, 
+                                                     train_name=args.ae_train_name,
+                                                     epoch=-1)
+    
+    assert ae_loaded_epoch > 0, 'Trained autoencoder not found'
+    assert fc_loaded_epoch > 0, 'Trained forecaster not found'
 
 remaining_epochs = args.epochs - loaded_epoch
 

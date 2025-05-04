@@ -20,7 +20,7 @@
     "residual_connection": true,
     "train_autoencoder": false,
     "include_autoencoder": false,
-    "use_lstm_encoder": false,
+    "use_lstm_encoder": true,
     "init_forced_decoding_prob": 0.25,
     "min_forced_decoding_prob": 0,
     "forced_decoding_epochs": 100,
@@ -42,5 +42,5 @@
     "train_loss_in_eval": false,
     "warmup_seq_length": 25,
     "forecast_seq_length": 50,
-    "parameters": 3587456
+    "parameters": 7140336
 }
