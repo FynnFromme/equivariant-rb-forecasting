@@ -72,7 +72,7 @@ class _SteerableConvBlock(enn.SequentialModule):
         super().__init__(*layers)
         
         self.in_dims, self.out_dims = in_dims, conv.out_dims
-        self.in_fields, self.out_fields = in_fields, out_fields
+        self.in_fields, self.out_fields = in_fields, conv.out_fields
         
 
 class RBSteerableAutoencoder(enn.EquivariantModule):
@@ -176,7 +176,7 @@ class RBSteerableAutoencoder(enn.EquivariantModule):
         #####################
         decoder_channels = reversed(encoder_channels)
         upsample_layers = reversed(pool_layers)
-        decoder_v_shares = list(reversed(v_shares))
+        decoder_v_shares = list(reversed(v_shares))[1:]
         for i, (out_channels, v_share, upsample) in enumerate(zip(decoder_channels, decoder_v_shares, upsample_layers), 1):            
             conv = _SteerableConvBlock(gspace=gspace, 
                                        in_fields=fields, 
@@ -205,7 +205,7 @@ class RBSteerableAutoencoder(enn.EquivariantModule):
                                    in_dims=dims, 
                                    v_kernel_size=v_kernel_size, 
                                    h_kernel_size=h_kernel_size,
-                                   v_share=decoder_v_shares[-1],
+                                   v_share=1, #decoder_v_shares[-1],
                                    input_drop_rate=drop_rate, 
                                    nonlinearity=None, 
                                    batch_norm=False)
