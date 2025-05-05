@@ -242,7 +242,8 @@ train_hyperparameters = {
     'early_stopping': args.early_stopping,
     'early_stopping_threshold': args.early_stopping_threshold,
     'epochs': args.epochs,
-    'train_loss_in_eval': args.train_loss_in_eval
+    'train_loss_in_eval': args.train_loss_in_eval,
+    'seed': args.seed
 }
 
 hyperparameters = model_hyperparameters | train_hyperparameters

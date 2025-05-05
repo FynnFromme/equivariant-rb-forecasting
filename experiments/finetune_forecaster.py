@@ -228,6 +228,7 @@ train_hyperparameters = {
     'train_loss_in_eval': args.train_loss_in_eval,
     'warmup_seq_length': args.warmup_seq_length,
     'forecast_seq_length': args.forecast_seq_length,
+    'seed': args.seed
 }
 
 hyperparameters = model_hyperparameters | train_hyperparameters

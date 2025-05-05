@@ -36,6 +36,7 @@
     "early_stopping_threshold": 1e-05,
     "epochs": 500,
     "train_loss_in_eval": false,
+    "seed": 0,
     "latent_size": 0.78125,
     "parameters": 7193472
 }

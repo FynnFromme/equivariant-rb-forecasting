@@ -39,6 +39,7 @@
     "early_stopping_threshold": 1e-05,
     "epochs": 500,
     "train_loss_in_eval": false,
+    "seed": 0,
     "warmup_seq_length": 25,
     "forecast_seq_length": 50,
     "parameters": 1178942
