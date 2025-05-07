@@ -24,7 +24,9 @@ class RB3DConvLSTMCell(Module):
         nonlinearity = torch.tanh,
         drop_rate: float = 0,
         recurrent_drop_rate: float = 0,
-        bias: bool = True
+        bias: bool = True,
+        peephole_connection: bool = True,
+        conv_peephole: bool = True
     ):
         """A convolutional LSTM cell that applies standard 3D convolution (with vertical parameter sharing).
 
@@ -44,6 +46,10 @@ class RB3DConvLSTMCell(Module):
             drop_rate (float, optional): The dropout rate applied to the input. Defaults to 0.
             recurrent_drop_rate (float, optional): The dropout rate applied to the hidden state. Defaults to 0.
             bias (bool, optional): Whether to apply a bias after the convolution operations. Defaults to True.
+            peephole_connection (bool, optional): Whether to include the current cell state as input of the gates. Defaults to True.
+            conv_peephole (bool, optional): Requires `peephole_connection == True`. If True, a convolution is applied to the current
+                cell state. Otherwise a single weight is learned for every height and field and multiplied with the cell state element-wise.
+                Defaults to True.
         """
         super().__init__()
         
@@ -59,12 +65,17 @@ class RB3DConvLSTMCell(Module):
         self.drop_rate = drop_rate
         self.recurrent_drop_rate = recurrent_drop_rate
         self.bias = bias
+        self.peephole_connection = peephole_connection
+        self.conv_peephole = conv_peephole
         
         self._dropout_mask = None
         self._recurrent_dropout_mask = None
         
-        # computes all three gates in parallel based on the input, hidden state and cell state
-        self.gate_conv = RB3DConv(in_channels=input_channels+2*hidden_channels, 
+        # computes all three gates in parallel based on the input, hidden state (and cell state)
+        gate_in_channels = input_channels+hidden_channels
+        if peephole_connection and conv_peephole:
+            gate_in_channels += hidden_channels
+        self.gate_conv = RB3DConv(in_channels=gate_in_channels, 
                                   out_channels=3*hidden_channels, 
                                   in_dims=dims,
                                   v_kernel_size=v_kernel_size,
@@ -89,6 +100,10 @@ class RB3DConvLSTMCell(Module):
                                          v_pad_mode='zeros',
                                          h_pad_mode=h_pad_mode,
                                          bias=bias)
+        
+        if peephole_connection and not conv_peephole:             
+            # share weights across dimensions to ensure equivariance
+            self.peephole_weights = torch.nn.Parameter(torch.zeros(3, hidden_channels, 1, 1, 1), requires_grad=True)
     
     
     def forward(self, input: Tensor, state: tuple[Tensor]) -> tuple[Tensor]:
@@ -112,9 +127,18 @@ class RB3DConvLSTMCell(Module):
             hidden_state = hidden_state * recurrent_dropout_mask
         
         # compute gates
-        gate_conv_input = torch.cat([input, hidden_state, cell_state], dim=1)
+        gate_conv_input = torch.cat([input, hidden_state], dim=1)
+        if self.peephole_connection and self.conv_peephole:
+            gate_conv_input = torch.cat([gate_conv_input, cell_state], dim=1)
+            
         gate_conv_output = self.gate_conv(gate_conv_input)
         fz, iz, oz, = torch.split(gate_conv_output, self.hidden_channels, dim=1)
+        
+        if self.peephole_connection and not self.conv_peephole:
+            fz = fz + self.peephole_weights[0] * cell_state
+            iz = iz + self.peephole_weights[1] * cell_state
+            oz = oz + self.peephole_weights[2] * cell_state
+        
         f = torch.sigmoid(fz)
         i = torch.sigmoid(iz)
         o = torch.sigmoid(oz)
@@ -202,7 +226,9 @@ class RB3DConvLSTM(Module):
         nonlinearity = torch.tanh,
         drop_rate: float = 0,
         recurrent_drop_rate: float = 0,
-        bias: bool = True
+        bias: bool = True,
+        peephole_connection: bool = True,
+        conv_peephole: bool = True
     ):
         """A convolutional LSTM that applies standard 3D convolution (with vertical parameter sharing).
 
@@ -224,6 +250,10 @@ class RB3DConvLSTM(Module):
             drop_rate (float, optional): The dropout rate applied to the input. Defaults to 0.
             recurrent_drop_rate (float, optional): The dropout rate applied to the hidden state. Defaults to 0.
             bias (bool, optional): Whether to apply a bias after the convolution operations. Defaults to True.
+            peephole_connection (bool, optional): Whether to include the current cell state as input of the gates. Defaults to True.
+            conv_peephole (bool, optional): Requires `peephole_connection == True`. If True, a convolution is applied to the current
+                cell state. Otherwise a single weight is learned for every height and field and multiplied with the cell state element-wise.
+                Defaults to True.
         """
         super().__init__()
         
@@ -255,7 +285,9 @@ class RB3DConvLSTM(Module):
                                                nonlinearity=nonlinearity,
                                                bias=bias,
                                                drop_rate=drop_rate,
-                                               recurrent_drop_rate=recurrent_drop_rate))
+                                               recurrent_drop_rate=recurrent_drop_rate,
+                                               peephole_connection=peephole_connection,
+                                               conv_peephole=conv_peephole))
             
             
     def forward(

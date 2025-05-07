@@ -99,6 +99,12 @@ parser.add_argument('-residual_connection', type=str2bool, default=True,
 parser.add_argument('-use_lstm_encoder', type=str2bool, default=False,
                     help='Whether to use a separate LSTM encoder to encode the warmup sequence into \
                         some representation. Defaults to `True`.')
+parser.add_argument('-peephole_connection', type=str2bool, default=True,
+                    help='Whether to include the current cell state as input of the gates. Defaults to True.')
+parser.add_argument('-conv_peephole', type=str2bool, default=True,
+                    help='Requires `peephole_connection == True`. If True, a convolution is applied to the current \
+                        cell state. Otherwise a single weight is learned for every height and field and multiplied with the \
+                        cell state element-wise. Defaults to True.')
 
 # training hyperparameters
 parser.add_argument('-warmup_seq_length', type=int, default=25,
@@ -261,7 +267,9 @@ model_hyperparameters = {
     'min_forced_decoding_prob': args.min_forced_decoding_prob,
     'forced_decoding_epochs': args.forced_decoding_epochs,
     'use_forced_decoding': args.use_forced_decoding,
-    'backprop_through_autoregression': args.backprop_through_autoregression
+    'backprop_through_autoregression': args.backprop_through_autoregression,
+    'peephole_connection': args.peephole_connection,
+    'conv_peephole': args.conv_peephole
 }
 
 print('Building model...')

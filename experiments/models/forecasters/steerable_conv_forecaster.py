@@ -27,6 +27,8 @@ class RBSteerableLatentForecaster(enn.EquivariantModule):
         v_share: int = 1,
         use_lstm_encoder: bool = True,
         residual_connection: bool = True,
+        peephole_connection: bool = True,
+        conv_peephole: bool = True,
         nonlinearity: Literal['relu', 'elu', 'tanh'] = 'tanh',
         drop_rate: float = 0,
         recurrent_drop_rate: float = 0,
@@ -47,6 +49,7 @@ class RBSteerableLatentForecaster(enn.EquivariantModule):
         self.hidden_channels = hidden_channels
         self.latent_dims = latent_dims
         self.residual_connection = residual_connection
+        self.peephole_connection = peephole_connection
         
         self.backprop_through_autoregression = backprop_through_autoregression
         
@@ -70,7 +73,9 @@ class RBSteerableLatentForecaster(enn.EquivariantModule):
                                                     nonlinearity=nonlinearity,
                                                     drop_rate=drop_rate,
                                                     recurrent_drop_rate=recurrent_drop_rate,
-                                                    bias=True)
+                                                    bias=True,
+                                                    peephole_connection=peephole_connection,
+                                                    conv_peephole=conv_peephole)
         else:
             self.lstm_encoder = None
             
@@ -85,7 +90,9 @@ class RBSteerableLatentForecaster(enn.EquivariantModule):
                                                 nonlinearity=nonlinearity,
                                                 drop_rate=drop_rate,
                                                 recurrent_drop_rate=recurrent_drop_rate,
-                                                bias=True)
+                                                bias=True,
+                                                peephole_connection=peephole_connection,
+                                                conv_peephole=conv_peephole)
         
         self.dropout = enn.PointwiseDropout(self.lstm_decoder.out_type, drop_rate)
         

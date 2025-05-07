@@ -29,7 +29,9 @@ class RBSteerableConvLSTMCell(enn.EquivariantModule):
         nonlinearity: Literal['relu', 'elu', 'tanh'] = 'tanh',
         drop_rate: float = 0,
         recurrent_drop_rate: float = 0,
-        bias: bool = True
+        bias: bool = True,
+        peephole_connection: bool = True,
+        conv_peephole: bool = True
     ):
         """A convolutional LSTM cell that applies steerable convolutions with 3D kernels that are not
         shared vertically due to RB not being vertically translation equivariant.
@@ -56,6 +58,10 @@ class RBSteerableConvLSTMCell(enn.EquivariantModule):
             drop_rate (float, optional): The dropout rate applied to the input. Defaults to 0.
             recurrent_drop_rate (float, optional): The dropout rate applied to the hidden state. Defaults to 0.
             bias (bool, optional): Whether to apply a bias after the convolution operations. Defaults to True.
+            peephole_connection (bool, optional): Whether to include the current cell state as input of the gates. Defaults to True.
+            conv_peephole (bool, optional): Requires `peephole_connection == True`. If True, a convolution is applied to the current
+                cell state. Otherwise a single weight is learned for every height and field and multiplied with the cell state element-wise.
+                Defaults to True.
         """
         super().__init__()
         
@@ -79,12 +85,18 @@ class RBSteerableConvLSTMCell(enn.EquivariantModule):
         self.recurrent_drop_rate = recurrent_drop_rate
         self.bias = bias
         
+        self.peephole_connection = peephole_connection
+        self.conv_peephole = conv_peephole
+        
         self._dropout_mask = None
         self._recurrent_dropout_mask = None
         
-        # computes all three gates in parallel based on the input, hidden state and cell state
+        # computes all three gates in parallel based on the input, hidden state (and cell state)
+        gate_in_fields = in_fields+hidden_fields
+        if peephole_connection and conv_peephole:
+            gate_in_fields += hidden_fields
         self.gate_conv = RBSteerableConv(gspace=gspace,
-                                         in_fields=in_fields+2*hidden_fields, 
+                                         in_fields=gate_in_fields, 
                                          out_fields=3*hidden_fields, 
                                          in_dims=dims,
                                          v_kernel_size=v_kernel_size,
@@ -110,7 +122,14 @@ class RBSteerableConvLSTMCell(enn.EquivariantModule):
                                                 v_pad_mode='zero',
                                                 h_pad_mode=h_pad_mode,
                                                 bias=bias)
-
+        
+        if peephole_connection and not conv_peephole:
+            assert hidden_fields == len(hidden_fields)*[hidden_fields[0]], 'using different hidden field types currently not supported \
+                when using peephole connections with element-wise weights'
+                
+            # share weights across horizontal dimensions and field dimension to ensure equivariance
+            self.peephole_weights = torch.nn.Parameter(torch.zeros(3, dims[-1], len(hidden_fields), 1, 1, 1), requires_grad=True)
+            
 
     def forward(self, input: GeometricTensor, state: tuple[GeometricTensor]) -> tuple[GeometricTensor]:
         """Computes the next hidden and cell state based on the previous ones and the current input.
@@ -133,9 +152,18 @@ class RBSteerableConvLSTMCell(enn.EquivariantModule):
             hidden_state = GeometricTensor(hidden_state.tensor * recurrent_dropout_mask, hidden_state.type)
         
         # compute gates
-        gate_conv_input = self._concat_fields([(input, self.in_fields), (hidden_state, self.hidden_fields), (cell_state, self.hidden_fields)])
+        gate_conv_input = self._concat_fields([(input, self.in_fields), (hidden_state, self.hidden_fields)])
+        if self.peephole_connection and self.conv_peephole:
+            gate_conv_input = self._concat_fields([(input, self.in_fields+self.hidden_fields), (cell_state, self.hidden_fields)])
+        
         gate_conv_output = self.gate_conv(gate_conv_input)
         fz, iz, oz, = self._split_fields(gate_conv_output, self.hidden_fields)
+        
+        if self.peephole_connection and not self.conv_peephole:
+            fz += self._apply_element_wise_peephole(cell_state, self.peephole_weights[0])
+            iz += self._apply_element_wise_peephole(cell_state, self.peephole_weights[1])
+            oz += self._apply_element_wise_peephole(cell_state, self.peephole_weights[2])
+            
         f = self.sigmoid(fz)
         i = self.sigmoid(iz)
         o = self.sigmoid(oz)
@@ -150,6 +178,13 @@ class RBSteerableConvLSTMCell(enn.EquivariantModule):
         new_hidden_state = GeometricTensor(o.tensor * self.nonlinearity(new_cell_state).tensor, hidden_state.type)
         
         return new_hidden_state, new_cell_state
+    
+    
+    def _apply_element_wise_peephole(self, cell_state, weights):
+        batch_size = cell_state.shape[0]
+        cell_state = cell_state.tensor.reshape(batch_size, self.in_dims[-1], len(self.hidden_fields), -1, *self.in_dims[:2])
+        out = weights * cell_state
+        return GeometricTensor(out.flatten(1, 3), self.hidden_type)
     
     
     def _concat_fields(self, geometric_tensors: list[tuple[GeometricTensor, list[Representation]]]) -> GeometricTensor:
@@ -297,7 +332,9 @@ class RBSteerableConvLSTM(enn.EquivariantModule):
         nonlinearity: Literal['relu', 'elu', 'tanh'] = 'tanh',
         bias: bool = True,
         drop_rate: float = 0,
-        recurrent_drop_rate: float = 0
+        recurrent_drop_rate: float = 0,
+        peephole_connection: bool = True,
+        conv_peephole: bool = True
     ):
         """A convolutional LSTM that applies steerable convolutions with 3D kernels that are not
         shared vertically due to RB not being vertically translation equivariant.
@@ -326,6 +363,10 @@ class RBSteerableConvLSTM(enn.EquivariantModule):
             drop_rate (float, optional): The dropout rate applied to the input. Defaults to 0.
             recurrent_drop_rate (float, optional): The dropout rate applied to the hidden state. Defaults to 0.
             bias (bool, optional): Whether to apply a bias after the convolution operations. Defaults to True.
+            peephole_connection (bool, optional): Whether to include the current cell state as input of the gates. Defaults to True.
+            conv_peephole (bool, optional): Requires `peephole_connection == True`. If True, a convolution is applied to the current
+                cell state. Otherwise a single weight is learned for every height and field and multiplied with the cell state element-wise.
+                Defaults to True.
         """
         super().__init__()
         
@@ -365,7 +406,9 @@ class RBSteerableConvLSTM(enn.EquivariantModule):
                                                       nonlinearity=nonlinearity,
                                                       bias=bias,
                                                       drop_rate=drop_rate,
-                                                      recurrent_drop_rate=recurrent_drop_rate))
+                                                      recurrent_drop_rate=recurrent_drop_rate,
+                                                      peephole_connection=peephole_connection,
+                                                      conv_peephole=conv_peephole))
             
             
     def forward(

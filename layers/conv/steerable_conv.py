@@ -10,21 +10,9 @@ from escnn.group import Representation
 
 from layers.conv import conv_utils
 from typing import Literal, Callable, Any
-
-
-# class RBSteerableConv(enn.EquivariantModule):
-#     def __new__(cls, continuous_vshare: bool = True, *args, **kwargs):
-#         # if called on A itself, pick subclass
-#         if cls.__name__ == RBSteerableConv.__name__ and cls.__module__ == RBSteerableConv.__module__:
-#             target = RBSteerableConvContinuous if continuous_vshare else RBSteerableConvDiscrete
-#             print(target)
-#             # create instance of B/C (b should not be forwarded to __init__ of B/C)
-#             return super().__new__(target)
-#         # if someone subclasses A further, leave default
-#         return super().__new__(cls)
             
 
-class RBSteerableConvDiscrete(enn.EquivariantModule):
+class RBSteerableConv_DiscreteVshare(enn.EquivariantModule):
     def __init__(self, 
                  gspace: GSpace, 
                  in_fields: list[Representation], 
