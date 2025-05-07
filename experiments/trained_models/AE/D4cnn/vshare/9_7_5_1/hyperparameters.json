@@ -32,8 +32,8 @@
         5,
         1
     ],
-    "batch_size": 8,
-    "accumulated_batches": 8,
+    "batch_size": 16,
+    "accumulated_batches": 4,
     "n_train": 24060,
     "n_valid": 8020,
     "learning_rate": 0.001,
