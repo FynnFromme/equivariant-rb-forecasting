@@ -41,7 +41,7 @@ class DataPreparation:
         self.batch_size = batch_size
         
         
-    def prepare_data(self, data_dir: str, sim_dir: str, simulation_name: str):
+    def prepare_data(self, data_dir: str, sim_dir: str, simulation_name: str, std_dataset: str = None):
         """Performs the actual data preparation:
         - Splitting into train, validation, test sets
         - Standardize to zero mean and unit variance
@@ -56,6 +56,8 @@ class DataPreparation:
             data_dir (str): The path of the directory to store the dataset in.
             sim_dir (str): The path of the directory, where the simulations are stored in.
             simulation_name (str): The name of the simulation.
+            std_dataset (str, optional): The name of the dataset to load the statistics from for standardization.
+                The dataset should be located in the `data_dir` and the name should not include '.h5'.
         """
         random.seed(simulation_name)
     
@@ -72,7 +74,10 @@ class DataPreparation:
         datafile = self._create_h5_datasets(data_dir, simulation_name, N_train, N_valid, 
                                             N_test, snapshots_per_file, dims) # output h5 file
         
-        scaler = self._fit_scaler(files) # can be used to standardize data
+        if std_dataset:
+            scaler = self._load_scaler(os.path.join(data_dir, f'{std_dataset}.h5'))
+        else:
+            scaler = self._fit_scaler(files)
         self._save_scaler(scaler, datafile, dims) # to be able to unstandardize data later (e.g. for visualization)
         
         self._write_data(datafile, scaler, train_files, valid_files, test_files)
@@ -155,6 +160,27 @@ class DataPreparation:
                 
             print(f'-> fitted scaler to simulation file {i+1}/{len(sim_filenames)}')
             
+        return scaler
+    
+    
+    def _load_scaler(self, std_dataset_file: str) -> StandardScaler:
+        """Loading the standard scaler from an existing dataset to use the same statistics.
+
+        Args:
+            std_dataset_file (str): The dataset file to copy the statistics from.
+
+        Returns:
+            StandardScaler: The loaded standard scaler.
+        """
+        print('loading scaler for standardization...')
+        scaler = StandardScaler()
+        
+        mean, std = standardization_params(std_dataset_file)
+        assert mean is not None and std is not None, 'Could not load statistics from dataset.'
+        
+        scaler.mean_ = mean.reshape(-1)
+        scaler.scale_ = std.reshape(-1)
+        
         return scaler
 
 
@@ -239,32 +265,35 @@ class DataPreparation:
         samples_shape = (*dims, 4)
         chunk_shape = (1, *dims, 1)
         
-        train_data = datafile.create_dataset('train', (N_train, *samples_shape), chunks=chunk_shape)
-        valid_data = datafile.create_dataset('valid', (N_valid, *samples_shape), chunks=chunk_shape)
-        test_data = datafile.create_dataset('test', (N_test, *samples_shape), chunks=chunk_shape)
-        
-        train_data.attrs['N'] = N_train
-        valid_data.attrs['N'] = N_valid
-        test_data.attrs['N'] = N_test
-        train_data.attrs['N_per_sim'] = snapshots_per_file
-        valid_data.attrs['N_per_sim'] = snapshots_per_file
-        test_data.attrs['N_per_sim'] = snapshots_per_file
+        if N_train > 0:
+            train_data = datafile.create_dataset('train', (N_train, *samples_shape), chunks=chunk_shape)
+            train_data.attrs['N'] = N_train
+            train_data.attrs['N_per_sim'] = snapshots_per_file
+        if N_valid > 0:
+            valid_data = datafile.create_dataset('valid', (N_valid, *samples_shape), chunks=chunk_shape)
+            valid_data.attrs['N'] = N_valid
+            valid_data.attrs['N_per_sim'] = snapshots_per_file
+        if N_test > 0:
+            test_data = datafile.create_dataset('test', (N_test, *samples_shape), chunks=chunk_shape)
+            test_data.attrs['N'] = N_test
+            test_data.attrs['N_per_sim'] = snapshots_per_file
         
         return datafile
 
 
     def _save_attrs(self, datafile, train_files, valid_files, test_files, snapshots_per_file):
-        datafile['train'].attrs['N'] = snapshots_per_file*len(train_files)
-        datafile['valid'].attrs['N'] = snapshots_per_file*len(valid_files)
-        datafile['test'].attrs['N'] = snapshots_per_file*len(test_files)
-        
-        datafile['train'].attrs['files'] = train_files
-        datafile['valid'].attrs['files'] = valid_files
-        datafile['test'].attrs['files'] = test_files
-        
-        datafile['train'].attrs['N_per_sim'] = snapshots_per_file
-        datafile['valid'].attrs['N_per_sim'] = snapshots_per_file
-        datafile['test'].attrs['N_per_sim'] = snapshots_per_file
+        if train_files:
+            datafile['train'].attrs['N'] = snapshots_per_file*len(train_files)
+            datafile['train'].attrs['files'] = train_files
+            datafile['train'].attrs['N_per_sim'] = snapshots_per_file
+        if valid_files:
+            datafile['valid'].attrs['N'] = snapshots_per_file*len(valid_files)
+            datafile['valid'].attrs['files'] = valid_files
+            datafile['valid'].attrs['N_per_sim'] = snapshots_per_file
+        if test_files:
+            datafile['test'].attrs['N'] = snapshots_per_file*len(test_files)
+            datafile['test'].attrs['files'] = test_files
+            datafile['test'].attrs['N_per_sim'] = snapshots_per_file
 
 
     def _write_data(self, datafile: h5py.File, scaler: StandardScaler, train_files: list[str], 
@@ -282,6 +311,9 @@ class DataPreparation:
         print('writing files...')
         
         for dataset_name, files in zip(['train', 'valid', 'test'], [train_files, valid_files, test_files]):
+            if not files:
+                continue # no files for that dataset (since e.g. p_train=0)
+            
             dataset = datafile[dataset_name] # output gets stored in this dataset
             
             next_index = 0
@@ -318,6 +350,24 @@ class DataPreparation:
         return scaled_batch
 
 
+def standardization_params(dataset_file: str) -> tuple[np.ndarray, np.ndarray]:
+    """Loads the mean and std from an existing dataset.
+
+    Args:
+        dataset_file (str): The dataset to load the statistics from.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]: The mean and std array.
+    """
+    with h5py.File(dataset_file, 'r') as hf:
+        if 'mean' in hf.keys() and 'std' in hf.keys():
+            mean = np.array(hf['mean'])
+            std = np.array(hf['std'])
+        else:
+            mean, std = None, None
+    return mean, std
+
+
 def parse_arguments():
     parser = ArgumentParser(description="""Transforms raw 3D Rayleigh-Bénard simulation data into a shape that can be 
                             used for machine learning and splits it into standardized train, validation 
@@ -333,7 +383,7 @@ def parse_arguments():
     default_data_dir = os.path.join(current_dir, 'datasets')
     default_sim_dir = os.path.join(current_dir, '..', 'simulation', '3d', 'data')
     
-    parser.add_argument('sim_name', type=str, default=default_sim_dir,
+    parser.add_argument('sim_name', type=str,
                         help='The name of the simulation to transfer into a ML dataset.')
     parser.add_argument('--data_dir', type=str, default=default_data_dir,
                         help='The path of the directory to store the dataset in.')
@@ -351,6 +401,9 @@ def parse_arguments():
                             when creating the dataset.')
     parser.add_argument('--step', type=int, default=1,
                         help="If step>1, only every i'th snapshot is included in the dataset.")
+    parser.add_argument('--std_dataset', type=str, default=None,
+                        help="The name of the dataset to load the statistics from for standardization. \
+                              The dataset should be located in the `data_dir` and the name should not include '.h5'.")
     
     return parser.parse_args()
 
@@ -360,7 +413,6 @@ if __name__ == '__main__':
     os.makedirs(args.data_dir, exist_ok=True)
     prep = DataPreparation(
                 p_train=args.p_train, p_valid=args.p_valid, p_test=args.p_test, 
-                first_snapshot=args.first_snapshot,
-                step=args.step)
+                first_snapshot=args.first_snapshot, step=args.step)
     
-    prep.prepare_data(args.data_dir, args.sim_dir, args.sim_name)
+    prep.prepare_data(args.data_dir, args.sim_dir, args.sim_name, args.std_dataset)
