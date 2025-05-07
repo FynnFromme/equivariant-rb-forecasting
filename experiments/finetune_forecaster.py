@@ -240,6 +240,14 @@ if loaded_epoch > 0 and os.path.isfile(hp_file):
     # check whether new hyperparameters are the same as the ones from the loaded model
     with open(hp_file, 'r') as f:
         prev_hps = json.load(f)
+        
+        prev_actual_batch_size = prev_hps['batch_size'] * prev_hps['accumulated_batches']
+        new_actual_batch_size = hyperparameters['batch_size'] * hyperparameters['accumulated_batches']
+        assert prev_actual_batch_size == new_actual_batch_size, 'previous actual batch size (batch_size*accumulated_batches)\
+            differs from new one'
+        prev_hps['batch_size'] = hyperparameters['batch_size'] # ignore batch_size for comparison
+        prev_hps['accumulated_batches'] = hyperparameters['accumulated_batches'] # ignore accumulated_batches for comparison
+        
         prev_hps['epochs'] = hyperparameters['epochs'] # ignore epochs
         assert hyperparameters == prev_hps, f"New hyperparameters do not correspond to the old ones"
         
