@@ -158,7 +158,7 @@ anim_sim_file = os.path.join(args.dataset_dir, f'{args.simulation_name}.h5')
 
 if is_autoencoder:
     test_dataset = dataset.RBDataset(sim_file, 'test', device=DEVICE, shuffle=False, samples=args.n_test)
-    if args.n_train > 0:
+    if args.n_train != 0:
         train_dataset = dataset.RBDataset(sim_file, 'train', device=DEVICE, shuffle=False, samples=args.n_train)
 else:
     if args.loss_on_latent: # requires latent representations which are precomputed
@@ -184,7 +184,7 @@ else:
     test_dataset = dataset.RBForecastDataset(sim_file, 'test', device=DEVICE, shuffle=False, samples=args.n_test, 
                                              forecast_seq_length=args.forecast_seq_length,
                                              warmup_seq_length=args.warmup_seq_length)
-    if args.n_train > 0:
+    if args.n_train != 0:
         train_dataset = dataset.RBForecastDataset(sim_file, 'train', device=DEVICE, shuffle=False, samples=args.n_train, 
                                                   forecast_seq_length=args.forecast_seq_length,
                                                   warmup_seq_length=args.warmup_seq_length)
@@ -193,17 +193,17 @@ else:
         sim_file, 'test', device=DEVICE, shuffle=False, samples=args.n_test, 
         warmup_seq_length=args.autoregressive_warmup_seq_length, 
         forecast_seq_length=args.autoregressive_forecast_seq_length)
-    if args.n_train > 0:
+    if args.n_train != 0:
         autoregressive_train_dataset = dataset.RBForecastDataset(
             sim_file, 'train', device=DEVICE, shuffle=False,
             samples=args.n_train, warmup_seq_length=args.autoregressive_warmup_seq_length, 
             forecast_seq_length=args.autoregressive_forecast_seq_length)
     autoregressive_test_loader = DataLoader(autoregressive_test_dataset, batch_size=args.batch_size)
-    if args.n_train > 0:
+    if args.n_train != 0:
         autoregressive_train_loader = DataLoader(autoregressive_train_dataset, batch_size=args.batch_size)
     
 test_loader = DataLoader(test_dataset, batch_size=args.batch_size)
-if args.n_train > 0:
+if args.n_train != 0:
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size)
 
 
@@ -254,7 +254,7 @@ if args.eval_performance:
     print(f'RMSE={performance["rmse"]:.4f}')
     print(f'MAE={performance["mae"]:.4f}')
     
-    if args.n_train > 0:
+    if args.n_train != 0:
         mse_train, mae_train = compute_loss(model, train_loader, [torch.nn.MSELoss(), torch.nn.L1Loss()], 
                                             train_dataset.num_samples, args.batch_size, model_forward_kwargs)
         performance['mse_train'], performance['mae_train'] = mse_train, mae_train
@@ -296,7 +296,7 @@ if args.eval_autoregressive_performance:
         # update performances in file
         save_json(performance, performance_file)
         
-        if args.n_train > 0:
+        if args.n_train != 0:
             avgs, medians, lower_bounds, upper_bounds = compute_autoregressive_loss(
                 model, args.autoregressive_forecast_seq_length, autoregressive_train_loader,
                 [torch.nn.MSELoss(), torch.nn.L1Loss()], args.autoregressive_forecast_seq_length,
@@ -365,7 +365,7 @@ if args.eval_performance_per_channel:
         performance['mse'], performance['mae'] = mse, mae
         performance['rmse'] = list(np.sqrt(mse))
         
-        if args.n_train > 0:
+        if args.n_train != 0:
             mse_train, mae_train = compute_loss_per_channel(model, train_loader, [torch.nn.MSELoss(), torch.nn.L1Loss()],  
                                                             -1, train_dataset.num_samples, args.batch_size, 
                                                             model_forward_kwargs)
@@ -393,7 +393,7 @@ if args.eval_performance_per_height:
         performance['mse'], performance['mae'] = mse, mae
         performance['rmse'] = list(np.sqrt(mse))
         
-        if args.n_train > 0:
+        if args.n_train != 0:
             mse_train, mae_train = compute_loss_per_channel(model, train_loader, [torch.nn.MSELoss(), torch.nn.L1Loss()], 
                                                             -2, train_dataset.num_samples, args.batch_size,  
                                                             model_forward_kwargs)
@@ -408,7 +408,7 @@ if args.eval_performance_per_height:
         performance['mse_per_channel'], performance['mae_per_channel'] = mse_per_channel, mae_per_channel
         performance['rmse_per_channel'] = np.sqrt(mse_per_channel).tolist()
         
-        if args.n_train > 0:
+        if args.n_train != 0:
             mse_train_per_channel, mae_train_per_channel = compute_loss_per_channel(
                 model, train_loader, [torch.nn.MSELoss(), torch.nn.L1Loss()], [-1, -2], 
                 train_dataset.num_samples, args.batch_size,  model_forward_kwargs)

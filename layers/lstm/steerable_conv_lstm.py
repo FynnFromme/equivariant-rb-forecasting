@@ -154,7 +154,8 @@ class RBSteerableConvLSTMCell(enn.EquivariantModule):
         # compute gates
         gate_conv_input = self._concat_fields([(input, self.in_fields), (hidden_state, self.hidden_fields)])
         if self.peephole_connection and self.conv_peephole:
-            gate_conv_input = self._concat_fields([(input, self.in_fields+self.hidden_fields), (cell_state, self.hidden_fields)])
+            gate_conv_input = self._concat_fields([(gate_conv_input, self.in_fields+self.hidden_fields), 
+                                                   (cell_state, self.hidden_fields)])
         
         gate_conv_output = self.gate_conv(gate_conv_input)
         fz, iz, oz, = self._split_fields(gate_conv_output, self.hidden_fields)
