@@ -128,6 +128,7 @@ class RBForecastDataset(RBDataset):
                  forecast_seq_length: int,
                  forecast_warmup: bool = False,
                  device: str = None,
+                 y_to_device: bool = True, # for long forecasts loading y into the GPU might not be feasible
                  samples: int = -1,
                  shuffle: bool = True,
                  slice_start: int = 0,
@@ -140,6 +141,8 @@ class RBForecastDataset(RBDataset):
         self.warmup_seq_length = warmup_seq_length
         self.forecast_seq_length = forecast_seq_length
         self.forecast_warmup = forecast_warmup
+        
+        self.y_to_device = y_to_device
         
         # during forecasting the number of samples differs since there is no forecasting across simulation boundaries
         self.num_samples = len(self.compute_forecasting_indices())
@@ -181,7 +184,8 @@ class RBForecastDataset(RBDataset):
                 
                 if self.device is not None:
                     x = x.to(self.device)
-                    y = y.to(self.device)
+                    if self.y_to_device:
+                        y = y.to(self.device)
                     
                 yield x, y
                 

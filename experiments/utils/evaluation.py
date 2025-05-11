@@ -114,7 +114,7 @@ def compute_autoregressive_loss(model: torch.nn.Module, forecast_seq_length: int
         for i, forecast_snap in enumerate(forecast_gen):
             for loss_nr, loss_fn in enumerate(loss_fns):
                 loss_fn.reduction = 'none'
-                loss = loss_fn(ground_truth[:, i], forecast_snap).mean(dim=(1,2,3,4)) # shape (batch_size,)
+                loss = loss_fn(ground_truth[:, i], forecast_snap.detach().cpu()).mean(dim=(1,2,3,4)) # shape (batch_size,)
                 losses[loss_nr, n:n+batch_size, i] = loss
         n += batch_size
     

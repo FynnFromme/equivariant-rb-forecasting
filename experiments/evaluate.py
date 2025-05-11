@@ -192,14 +192,15 @@ else:
     autoregressive_test_dataset = dataset.RBForecastDataset(
         sim_file, 'test', device=DEVICE, shuffle=False, samples=args.n_test, 
         warmup_seq_length=args.autoregressive_warmup_seq_length, 
-        forecast_seq_length=args.autoregressive_forecast_seq_length)
+        forecast_seq_length=args.autoregressive_forecast_seq_length,
+        y_to_device=False)
+    autoregressive_test_loader = DataLoader(autoregressive_test_dataset, batch_size=args.batch_size)
     if args.n_train != 0:
         autoregressive_train_dataset = dataset.RBForecastDataset(
             sim_file, 'train', device=DEVICE, shuffle=False,
             samples=args.n_train, warmup_seq_length=args.autoregressive_warmup_seq_length, 
-            forecast_seq_length=args.autoregressive_forecast_seq_length)
-    autoregressive_test_loader = DataLoader(autoregressive_test_dataset, batch_size=args.batch_size)
-    if args.n_train != 0:
+            forecast_seq_length=args.autoregressive_forecast_seq_length,
+            y_to_device=False)
         autoregressive_train_loader = DataLoader(autoregressive_train_dataset, batch_size=args.batch_size)
     
 test_loader = DataLoader(test_dataset, batch_size=args.batch_size)
