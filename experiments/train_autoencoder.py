@@ -75,9 +75,9 @@ parser.add_argument('-v_kernel_size', type=int, default=5,
 parser.add_argument('-h_kernel_size', type=int, default=5,
                     help='The horizontal kernel size. Defaults to `5`.')
 parser.add_argument('-latent_v_kernel_size', type=int, default=3,
-                    help='The vertical kernel size used for the convolution in latent space. Defaults to `5`.')
+                    help='The vertical kernel size used for the convolution in latent space. Defaults to `3`.')
 parser.add_argument('-latent_h_kernel_size', type=int, default=3,
-                    help='The horizontal kernel size used for the convolution in latent space. Defaults to `5`.')
+                    help='The horizontal kernel size used for the convolution in latent space. Defaults to `3`.')
 parser.add_argument('-drop_rate', type=float, default=0.2,
                     help='The drop rate used in between autoencoder layers. Defaults to `0.2`.')
 parser.add_argument('-nonlinearity', type=str, default='ELU', choices=['ELU', 'ReLU', 'LeakyReLU'],

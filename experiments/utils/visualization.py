@@ -183,8 +183,8 @@ def rb_autoencoder_animation_3d(model: torch.nn.Module,
     diff_faces = plot_cube_faces(batch_diff[0, :, :, :, channel], ax3, cmap='RdBu_r',
                                  contour_levels=contour_levels, show_back_faces=rotate)
     
-    ax2.set_aspect('equal', adjustable='box')
     ax1.set_aspect('equal', adjustable='box')
+    ax2.set_aspect('equal', adjustable='box')
     ax3.set_aspect('equal', adjustable='box')
     
     ax1.set_title('input')
@@ -261,37 +261,39 @@ def rb_autoencoder_animation_3d(model: torch.nn.Module,
     
     
 def plot_cube_faces(arr, ax, dims=(2*np.pi, 2*np.pi, 2), contour_levels=100, cmap='rainbow',
-                    show_back_faces=False) -> list:
+                    show_back_faces=False, vmin=None, vmax=None, **contour_kwargs) -> list:
     x0 = np.linspace(0, dims[0], arr.shape[0])
     y0 = np.linspace(0, dims[1], arr.shape[1])
     z0 = np.linspace(0, dims[2], arr.shape[2])
     x, y, z = np.meshgrid(x0, y0, z0)
     
     xmax, ymax, zmax = max(x0), max(y0), max(z0)
-    vmin, vmax = np.min(arr), np.max(arr)
+    _vmin, _vmax = np.min(arr), np.max(arr)
+    if not vmin: vmin=_vmin
+    if not vmax: vmax=_vmax
     levels = np.linspace(vmin, vmax, contour_levels)
 
     z1 = ax.contourf(x[:, :, 0], y[:, :, 0], arr[:, :, -1].T,
                      zdir='z', offset=zmax, vmin=vmin, vmax=vmax,
-                     levels=levels, cmap=cmap)
+                     levels=levels, cmap=cmap, **contour_kwargs)
     if show_back_faces:
         z2 = ax.contourf(x[:, :, 0], y[:, :, 0], arr[:, :, 0].T,
                         zdir='z', offset=0, vmin=vmin, vmax=vmax,
                         levels=levels, cmap=cmap)
     y1 = ax.contourf(x[0, :, :].T, arr[:, 0, :].T, z[0, :, :].T,
                      zdir='y', offset=0, vmin=vmin, vmax=vmax,
-                     levels=levels, cmap=cmap)
+                     levels=levels, cmap=cmap, **contour_kwargs)
     if show_back_faces:
         y2 = ax.contourf(x[0, :, :].T, arr[:, -1, :].T, z[0, :, :].T,
                         zdir='y', offset=ymax, vmin=vmin, vmax=vmax,
-                        levels=levels, cmap=cmap)
+                        levels=levels, cmap=cmap, **contour_kwargs)
     x1 = ax.contourf(arr[-1, :, :].T, y[:, 0, :].T, z[:, 0, :].T,
                      zdir='x', offset=xmax, vmin=vmin, vmax=vmax,
-                     levels=levels, cmap=cmap)
+                     levels=levels, cmap=cmap, **contour_kwargs)
     if show_back_faces:
         x2 = ax.contourf(arr[0, :, :].T, y[:, 0, :].T, z[:, 0, :].T,
                         zdir='x', offset=0, vmin=vmin, vmax=vmax,
-                        levels=levels, cmap=cmap)
+                        levels=levels, cmap=cmap, **contour_kwargs)
     
     return [z1, z2, y1, y2, x1, x2] if show_back_faces else [z1, y1, x1]
 
@@ -950,34 +952,68 @@ def plot_performance_per_hp(trains_dir: str, results_dir: str, model_names: str 
 
 
 def plot_autoregressive_performance(results_dir: str, model_names: str | list, train_names: str | list, metric: str,
-                                    show_train: bool = False, show_bounds: bool = True, median: bool = True):
+                                    show_train: bool = False, show_bounds: bool = True, show_std: bool = False,
+                                    median: bool = True, group_same_model: bool = False):
     if type(model_names) == str: model_names = [model_names]
     if type(train_names) == str: train_names = [train_names]
     
     fig = plt.figure(figsize=(8, 5))
     fig, ax = plt.subplots()
     
+    performances = defaultdict(list)
+    performances_lower = defaultdict(list)
+    performances_upper = defaultdict(list)
+    performances_std = defaultdict(list)
+    performances_train = defaultdict(list)
+    performances_train_lower = defaultdict(list)
+    performances_train_upper = defaultdict(list)
+    performances_train_std = defaultdict(list)
+    
     for model_name, train_name in zip(model_names, train_names):
         results_file = os.path.join(results_dir, model_name, train_name, 'autoregressive_performance.json')
         with open(results_file, 'r') as f:
             results = json.load(f)
             
-        x = range(1, len(results[metric])+1)
-        
         median_suffix = '_median' if median else ''
-        test_line, = plt.plot(x, results[metric+median_suffix], label=f'{model_name}/{train_name} - test')
+        key = model_name if group_same_model else f'{model_name}/{train_name}'
+        
+        performances[key].append(np.array(results[metric+median_suffix]))
+        performances_lower[key].append(np.array(results[f'{metric}_lower']))
+        performances_upper[key].append(np.array(results[f'{metric}_upper']))
+        if show_std:
+            performances_std[key].append(np.array(results[f'{metric}_std']))
+        if show_train:
+            # only if show_train since the train performance might not be included in the results
+            performances_train[key].append(np.array(results[f'{metric}_train{median_suffix}']))
+            performances_train_lower[key].append(np.array(results[f'{metric}_train_lower']))
+            performances_train_upper[key].append(np.array(results[f'{metric}_train_upper']))
+            if show_std:
+                performances_train_std[key].append(np.array(results[f'{metric}_train_std']))
+        
+    for key in performances.keys():
+        x = range(1, len(performances[key][0])+1)
+        test_line, = plt.plot(x, np.mean(performances[key], axis=0), label=f'{key} - test')
         if show_bounds:
-            ax.fill_between(x, results[f'{metric}_lower'], results[f'{metric}_upper'], 
+            ax.fill_between(x, np.mean(performances_lower[key], axis=0), np.mean(performances_upper[key], axis=0), 
+                            color=test_line.get_color(), alpha=0.2)
+        
+        if show_std:
+            perf = np.mean(performances[key], axis=0)
+            std = np.mean(performances_std[key], axis=0)
+            ax.fill_between(x, perf-std, perf+std, 
                             color=test_line.get_color(), alpha=0.2)
             
         if show_train:
-            x = range(1, len(results[f'{metric}_train'])+1)
-            train_line, = plt.plot(x, results[f'{metric}_train'+median_suffix], label=f'{model_name}/{train_name} - train')
+            x = range(1, len(performances_train[key][0])+1)
+            train_line, = plt.plot(x, np.mean(performances_train[key], axis=0), label=f'{key} - train')
             if show_bounds:
-                ax.fill_between(x, results[f'{metric}_train_lower'], results[f'{metric}_train_upper'], 
+                ax.fill_between(x, np.mean(performances_train_lower[key], axis=0), np.mean(performances_train_upper[key], axis=0), 
                                 color=train_line.get_color(), alpha=0.2)
-        
-        
+            if show_std:
+                perf = np.mean(performances_train[key], axis=0)
+                std = np.mean(performances_train_std[key], axis=0)
+                ax.fill_between(x, perf-std, perf+std, 
+                                color=test_line.get_color(), alpha=0.2)
     
     plt.ylabel(metric.upper())
     plt.xlabel('autoregressive steps')

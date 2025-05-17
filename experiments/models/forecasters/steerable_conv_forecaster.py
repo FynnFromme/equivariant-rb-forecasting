@@ -13,7 +13,6 @@ from experiments.models import model_utils
 from collections import OrderedDict
 from typing import Literal, Any
 
-# TODO LayerNorm?
 class RBSteerableLatentForecaster(enn.EquivariantModule):
     def __init__(
         self,

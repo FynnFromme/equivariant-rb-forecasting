@@ -149,7 +149,7 @@ class RBForecastDataset(RBDataset):
         self.num_samples = min(self.num_samples, samples) if samples > 0 else self.num_samples
 
 
-    def generator(self, start: int = 0, end: int = -1):
+    def generator(self, start: int = 0, end: int = -1):            
         end = min(self.num_samples, end) if end != -1 else self.num_samples
         start += self.slice_start
         end += self.slice_start

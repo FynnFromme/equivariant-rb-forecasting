@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import json
 import numpy as np
 
@@ -10,7 +11,7 @@ from utils import dataset
 from utils.latent_dataset import compute_latent_dataset
 from torch.utils.data import DataLoader
 
-from utils.evaluation import compute_loss, compute_loss_per_channel, compute_autoregressive_loss
+from utils.evaluation import compute_loss, compute_loss_per_channel, compute_autoregressive_loss, compute_predictions
 from utils import visualization
 from utils.evaluation import compute_latent_sensitivity
 from utils.model_building import build_and_load_trained_model
@@ -67,6 +68,8 @@ parser.add_argument('-eval_performance_per_channel', action='store_true', defaul
                     help='When given, the performance of the model is evaluated per channel.')
 parser.add_argument('-eval_performance_per_height', action='store_true', default=False,
                     help='When given, the performance of the model is evaluated per height.')
+parser.add_argument('-eval_inference_time', action='store_true', default=False,
+                    help='When given, the average inverence time is evaluated.')
 parser.add_argument('-check_equivariance', action='store_true', default=False,
                     help='When given, the equivariance of an equivariant model is checked.')
 parser.add_argument('-animate2d', action='store_true', default=False,
@@ -108,6 +111,7 @@ if not any([args.eval_performance,
             args.eval_performance_per_sim,
             args.eval_performance_per_channel,
             args.eval_performance_per_height,
+            args.eval_inference_time,
             args.check_equivariance, 
             args.animate2d, 
             args.animate3d, 
@@ -120,6 +124,7 @@ if not any([args.eval_performance,
                  -eval_performance_per_sim
                  -eval_performance_per_channel
                  -eval_performance_per_height
+                 -eval_inference_time
                  -check_equivariance
                  -animate2d
                  -animate3d
@@ -216,7 +221,7 @@ is_forecast_model = args.model_name.startswith('FC')
 override_hps = {'include_autoencoder': not args.loss_on_latent, 'parallel_ops': False} if is_forecast_model else {}
 model = build_and_load_trained_model(TRAINED_MODELS_DIR, args.model_name, args.train_name, epoch=-1, override_hps=override_hps)
 model.to(DEVICE) 
-   
+
 model_forward_kwargs = {'steps': args.forecast_seq_length} if is_forecast_model else {}
    
    
@@ -267,6 +272,34 @@ if args.eval_performance:
     
     # update performances in file
     save_json(performance, performance_file)
+    
+    
+if args.eval_inference_time:
+    print('Evaluating inference time...')
+    # read current times
+    inference_time_file = os.path.join(results_dir, 'inference_time.json')
+    inference_time = load_json(inference_time_file)
+    inference_time['batch_size'] = args.batch_size
+    
+    if is_forecaster:
+        inference_time['loss_on_latent'] = args.loss_on_latent
+        inference_time['forecast_seq_length'] = args.forecast_seq_length
+        inference_time['warmup_seq_length'] = args.warmup_seq_length
+    
+    predictions = compute_predictions(model, test_loader, test_dataset.num_samples, args.batch_size, model_forward_kwargs)
+    
+    inference_times = []
+    t = time.time()
+    for outputs, predictions in predictions:
+        delta_t = time.time()-t
+        if predictions.size(0) == args.batch_size: # ignore last (incomplete) batch
+            inference_times.append(delta_t)
+        t = time.time()
+        
+    inference_time['avg_time'] = np.mean(inference_times)
+    
+    # update inference_time in file
+    save_json(inference_time, inference_time_file)
         
         
 if args.eval_autoregressive_performance:
@@ -280,7 +313,7 @@ if args.eval_autoregressive_performance:
         performance['simulation_name'] = args.simulation_name
 
         # update new performance metrics but keep other contents
-        avgs, medians, lower_bounds, upper_bounds = compute_autoregressive_loss(
+        avgs, medians, lower_bounds, upper_bounds, std = compute_autoregressive_loss(
             model, args.autoregressive_forecast_seq_length, autoregressive_test_loader,
             [torch.nn.MSELoss(), torch.nn.L1Loss()], args.autoregressive_forecast_seq_length,
             autoregressive_test_dataset.num_samples, args.batch_size, args.autoregressive_confidence_interval)
@@ -289,16 +322,18 @@ if args.eval_autoregressive_performance:
         performance['mse_median'], performance['mae_median'] = medians
         performance['mse_lower'], performance['mae_lower'] = lower_bounds
         performance['mse_upper'], performance['mae_upper'] = upper_bounds
+        performance['mse_std'], performance['mae_std'] = std
         performance['rmse'] = list(np.sqrt(performance['mse']))
         performance['rmse_median'] = list(np.sqrt(performance['mse_median']))
         performance['rmse_lower'] = list(np.sqrt(performance['mse_lower']))
         performance['rmse_upper'] = list(np.sqrt(performance['mse_upper']))
+        performance['rmse_std'] = list(np.sqrt(performance['mse_std']))
         
         # update performances in file
         save_json(performance, performance_file)
         
         if args.n_train != 0:
-            avgs, medians, lower_bounds, upper_bounds = compute_autoregressive_loss(
+            avgs, medians, lower_bounds, upper_bounds, std = compute_autoregressive_loss(
                 model, args.autoregressive_forecast_seq_length, autoregressive_train_loader,
                 [torch.nn.MSELoss(), torch.nn.L1Loss()], args.autoregressive_forecast_seq_length,
                 autoregressive_train_dataset.num_samples, args.batch_size, args.autoregressive_confidence_interval)
@@ -307,10 +342,12 @@ if args.eval_autoregressive_performance:
             performance['mse_train_median'], performance['mae_train_median'] = medians
             performance['mse_train_lower'], performance['mae_train_lower'] = lower_bounds
             performance['mse_train_upper'], performance['mae_train_upper'] = upper_bounds
+            performance['mse_train_std'], performance['mae_train_std'] = std
             performance['rmse_train'] = list(np.sqrt(performance['mse_train']))
             performance['rmse_train_median'] = list(np.sqrt(performance['mse_train_median']))
             performance['rmse_train_lower'] = list(np.sqrt(performance['mse_train_lower']))
             performance['rmse_train_upper'] = list(np.sqrt(performance['mse_train_upper']))
+            performance['rmse_train_std'] = list(np.sqrt(performance['mse_train_std']))
 
             # update performances in file
             save_json(performance, performance_file)

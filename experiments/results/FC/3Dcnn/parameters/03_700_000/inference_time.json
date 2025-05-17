@@ -1,0 +1,7 @@
+{
+    "batch_size": 64,
+    "loss_on_latent": false,
+    "forecast_seq_length": 50,
+    "warmup_seq_length": 25,
+    "avg_time": 14.02391059959636
+}

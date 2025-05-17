@@ -10,7 +10,6 @@ from collections import OrderedDict
 
 import random
 
-# TODO LayerNorm?
 class RB3DLatentForecaster(Module):
     def __init__(
         self,

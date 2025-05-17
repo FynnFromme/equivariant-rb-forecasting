@@ -34,9 +34,9 @@ def compute_loss(model: torch.nn.Module, test_loader: DataLoader, loss_fns,
     running_losses = [0]*len(loss_fns)
     n = 0
     for outputs, predictions in predictions:
+        batch_size = outputs.size(0)
         n += batch_size
         for loss_nr, loss_fn in enumerate(loss_fns):
-            batch_size = outputs.size(0)
             loss = loss_fn(outputs, predictions).item()*batch_size
             running_losses[loss_nr] += loss
 
@@ -126,16 +126,19 @@ def compute_autoregressive_loss(model: torch.nn.Module, forecast_seq_length: int
     median_losses = torch.quantile(losses, 0.5, dim=1)
     lower_bounds = torch.quantile(losses, (1-confidence_interval)/2, dim=1)
     upper_bounds = torch.quantile(losses, 1-(1-confidence_interval)/2, dim=1)
+    std = losses.std(dim=1)
     
     avg_losses = avg_losses.tolist()
     median_losses = median_losses.tolist()
     lower_bounds = lower_bounds.tolist()
     upper_bounds = upper_bounds.tolist()
+    std = std.tolist()
     
     return (avg_losses if multiple_losses else avg_losses[0],
             median_losses if multiple_losses else median_losses[0],
             lower_bounds if multiple_losses else lower_bounds[0],
-            upper_bounds if multiple_losses else upper_bounds[0],)
+            upper_bounds if multiple_losses else upper_bounds[0],
+            std if multiple_losses else std[0])
 
 
 def compute_latent_sensitivity(model: torch.nn.Module, dataset: RBDataset, samples: int = None, 
