@@ -12,7 +12,7 @@
     "flips": true,
     "rots": 4,
     "lstm_channels": [
-        164
+        129
     ],
     "parallel_ops": false,
     "residual_connection": true,
@@ -24,8 +24,6 @@
     "forced_decoding_epochs": 100,
     "use_forced_decoding": true,
     "backprop_through_autoregression": true,
-    "peephole_connection": false,
-    "conv_peephole": false,
     "batch_size": 64,
     "accumulated_batches": 1,
     "n_train": 19620,
@@ -43,5 +41,5 @@
     "warmup_seq_length": 25,
     "forecast_seq_length": 50,
     "seed": 2,
-    "parameters": 3613936
+    "parameters": 3702977
 }
