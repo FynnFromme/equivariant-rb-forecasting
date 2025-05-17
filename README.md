@@ -1,5 +1,9 @@
 # Equivariant 3D Rayleigh-Bénard Forecasting
 
+
+https://github.com/user-attachments/assets/018bbb2e-9cca-449d-a116-2b47bfbb80da
+
+
 ## Project Structure
 In the following, an overview of the most important parts of the project is shown:
 ```
