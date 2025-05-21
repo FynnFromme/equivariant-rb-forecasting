@@ -2,7 +2,7 @@
 
 This repository is the official implementation of the paper ["Surrogate Modeling of 3D Rayleigh-Bénard Convection with Equivariant Autoencoders"](https://arxiv.org/abs/2505.13569). 
 
-![forecast](https://github.com/user-attachments/assets/2189e52a-c1fd-4775-b2a7-c3ef71627b6c)
+![Forecast Animation](https://github.com/user-attachments/assets/7522f0e1-abd1-497a-91db-cd27129ca033)
 
 ## Project Structure
 In the following, an overview of the most important parts of the project is shown:
